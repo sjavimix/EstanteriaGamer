@@ -208,21 +208,23 @@
         });
 
         function login() {
-            const btn = document.getElementById('btn-login');
-            btn.innerText = "Conectando...";
-            btn.disabled = true;
+		const btn = document.getElementById('btn-login');
+		btn.innerText = "Abriendo Google...";
+		btn.disabled = true;
 
-            // Asegurar que la sesión persista aunque se cierre el navegador
-            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-                .then(() => {
-                    const provider = new firebase.auth.GoogleAuthProvider();
-                    return auth.signInWithRedirect(provider);
-                })
-                .catch((error) => {
-                    console.error("Error de persistencia:", error);
-                    resetLoginButton();
-                });
-        }
+		const provider = new firebase.auth.GoogleAuthProvider();
+
+		// Usar Popup suele ser más fiable que Redirect en estos casos
+		auth.signInWithPopup(provider)
+			.then((result) => {
+				console.log("¡Acceso concedido!", result.user.email);
+			})
+			.catch((error) => {
+				console.error("Error detallado:", error.code, error.message);
+				alert("Error de Google: " + error.message);
+				resetLoginButton();
+        });
+		}
 
         function resetLoginButton() {
             const btn = document.getElementById('btn-login');
