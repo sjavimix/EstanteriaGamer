@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GamerShelf Pro v1.3</title>
+    <title>GamerShelf Pro v1.6 - Vision</title>
     <meta name="theme-color" content="#107c10">
+    
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     
     <style>
-        /* MANTENGO TUS ESTILOS EXACTOS */
         body { font-family: 'Segoe UI', sans-serif; background: #000000; color: #e0e0e0; margin: 0; padding: 20px; padding-bottom: 80px; }
         header { max-width: 900px; margin: 0 auto 30px; text-align: center; }
         .header-logo { max-width: 100%; height: auto; margin-top: 10px; }
@@ -53,12 +54,17 @@
         .game-title { flex-grow: 1; }
         .btn-del { color: #555; background: none; border: none; cursor: pointer; }
 
-        /* NUEVO OVERLAY DE CÁMARA */
+        /* OVERLAY DE CÁMARA MEJORADO */
         #camera-overlay { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.9); z-index: 100000; flex-direction: column; align-items: center; justify-content: center; 
+            background: rgba(0,0,0,0.95); z-index: 100000; flex-direction: column; align-items: center; justify-content: center; 
         }
-        #reader { width: 90%; max-width: 500px; border: 3px solid #44cf6c; border-radius: 15px; overflow: hidden; background: #000; }
+        #reader { width: 90%; max-width: 500px; border: 3px solid #44cf6c; border-radius: 15px; overflow: hidden; background: #000; position: relative; }
+        .cam-controls { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .btn-snap { padding: 15px 25px; background: #44cf6c; color: black; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; }
+        .btn-cancel { padding: 10px 20px; background: none; color: #ff4444; border: 1px solid #ff4444; border-radius: 8px; cursor: pointer; }
+        
+        #scan-line { position: absolute; width: 100%; height: 2px; background: #44cf6c; box-shadow: 0 0 10px #44cf6c; top: 50%; z-index: 10; display: none; }
         .footer-info { position: fixed; bottom: 0; left: 0; width: 100%; background: #107c10; color: white; text-align: center; padding: 10px; font-weight: bold; z-index: 100; }
     </style>
 </head>
@@ -76,7 +82,7 @@
             <div class="form-row">
                 <div class="autocomplete-container">
                     <input type="text" id="add-titulo" class="input-add" placeholder="Título o Código Barras...">
-                    <button class="btn-cam" onclick="startScanner()">📷</button>
+                    <button class="btn-cam" onclick="openCamera()">📷</button>
                     <div id="suggestions" class="suggestions"></div>
                 </div>
                 
@@ -139,20 +145,27 @@
     </header>
 
     <div id="camera-overlay">
-        <h3 style="color: #44cf6c;">ESCANEANDO...</h3>
-        <div id="reader"></div>
-        <button onclick="stopScanner()" style="margin-top:20px; padding:10px 30px; background:#ff4444; color:white; border:none; border-radius:8px; font-weight:bold;">CERRAR</button>
-        <p id="ocr-status" style="color:#44cf6c; margin-top:10px; font-weight:bold;"></p>
+        <h3 id="cam-title" style="color: #44cf6c; margin-bottom: 10px;">ELIGE MODO</h3>
+        <div id="reader">
+            <div id="scan-line"></div>
+        </div>
+        <canvas id="ocr-canvas" style="display:none;"></canvas>
+        
+        <div class="cam-controls">
+            <button id="btn-mode-barcode" class="btn-snap" style="background:#333; color:white; border:1px solid #44cf6c;" onclick="startBarcode()">MODO CÓDIGO</button>
+            <button id="btn-mode-ocr" class="btn-snap" onclick="captureOCR()">LEER CARÁTULA (OCR)</button>
+            <button class="btn-cancel" onclick="closeCamera()">CERRAR</button>
+        </div>
+        <p id="ocr-status" style="color:#44cf6c; margin-top:15px; font-weight:bold; text-align: center; max-width: 80%;"></p>
     </div>
 
     <div id="main-container"></div>
-    <div id="info-footer" class="footer-info">v1.3 | Conectado a Firebase</div>
+    <div id="info-footer" class="footer-info">v1.6 | OCR + Barcode Ready</div>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <script>
-        // TU CONFIGURACIÓN FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyAb3GqlzjbDTNxLGI8maiF3U0qGieGERdw",
             authDomain: "estanteria-gamer.firebaseapp.com",
@@ -161,10 +174,10 @@
             messagingSenderId: "181559174957",
             appId: "1:181559174957:web:7d6e99f7cd32632ba8d5a4"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const RAWG_KEY = "21c0ccfd8ada49c6b44092b79b9bfbbb";
+        
         let db_local = [];
         let fotoSeleccionada = "";
         let typingTimer;
@@ -173,7 +186,7 @@
         const inputTitulo = document.getElementById('add-titulo');
         const suggestionsBox = document.getElementById('suggestions');
 
-        // BÚSQUEDA MANUAL EN RAWG
+        // BÚSQUEDA MANUAL
         inputTitulo.addEventListener('input', () => {
             clearTimeout(typingTimer);
             const query = inputTitulo.value.trim();
@@ -207,68 +220,97 @@
             } catch (e) { console.error(e); }
         }
 
-        // LÓGICA DE ESCANEO MEJORADA
-        async function startScanner() {
+        // --- LÓGICA DE CÁMARA HÍBRIDA ---
+
+        function openCamera() {
             document.getElementById('camera-overlay').style.display = 'flex';
-            html5QrCode = new Html5Qrcode("reader");
-            
-            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
-            
-            try {
-                await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
-            } catch (err) {
-                alert("Error de cámara: " + err);
-                stopScanner();
-            }
+            document.getElementById('ocr-status').innerText = "Selecciona un modo para empezar";
         }
 
-        async function onScanSuccess(decodedText) {
-            navigator.vibrate(100);
-            document.getElementById('ocr-status').innerText = "¡Detectado! Buscando: " + decodedText;
+        async function startBarcode() {
+            if (html5QrCode) await html5QrCode.stop();
+            document.getElementById('cam-title').innerText = "ESCANEANDO CÓDIGO...";
+            document.getElementById('scan-line').style.display = "block";
             
-            // Intentar buscar nombre
-            const nombre = await buscarPorCodigo(decodedText);
+            html5QrCode = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 280, height: 150 } };
             
-            if (nombre) {
-                inputTitulo.value = nombre.toUpperCase();
-                buscarEnRAWG(nombre); // Para sacar la foto automáticamente
-                stopScanner();
+            html5QrCode.start({ facingMode: "environment" }, config, async (text) => {
+                navigator.vibrate(100);
+                document.getElementById('ocr-status').innerText = "Buscando código: " + text;
+                const nombre = await buscarPorCodigo(text);
+                if(nombre) {
+                    inputTitulo.value = nombre.toUpperCase();
+                    buscarEnRAWG(nombre);
+                    closeCamera();
+                } else {
+                    alert("Código no reconocido. Intenta con el botón OCR enfocando el título.");
+                }
+            });
+        }
+
+        async function captureOCR() {
+            if (html5QrCode) {
+                // Si el escáner de barras está activo, tomamos un frame
+                const video = document.querySelector('#reader video');
+                const canvas = document.getElementById('ocr-canvas');
+                const status = document.getElementById('ocr-status');
+                
+                if(!video) { 
+                    startBarcode(); // Iniciamos la cámara si no estaba
+                    status.innerText = "Iniciando cámara... Pulsa de nuevo en 2 segundos";
+                    return; 
+                }
+
+                status.innerText = "LEYENDO CARÁTULA... ⏳";
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                
+                const imgData = canvas.toDataURL('image/jpeg');
+                
+                Tesseract.recognize(imgData, 'eng+spa').then(({ data: { text } }) => {
+                    const limpio = text.replace(/[^a-zA-Z0-9 ]/g, " ").trim();
+                    if(limpio.length > 4) {
+                        status.innerText = "Detectado: " + limpio;
+                        inputTitulo.value = limpio.toUpperCase();
+                        buscarEnRAWG(limpio);
+                        setTimeout(closeCamera, 1500);
+                    } else {
+                        status.innerText = "No se lee bien. Acerca más el título.";
+                    }
+                });
             } else {
-                inputTitulo.value = decodedText;
-                document.getElementById('ocr-status').innerText = "Código leído, pero nombre no hallado.";
-                alert("Código detectado ("+decodedText+") pero no está en la base de datos. Pon el nombre a mano.");
-                stopScanner();
+                startBarcode();
+                document.getElementById('ocr-status').innerText = "Activando cámara...";
             }
         }
 
         async function buscarPorCodigo(ean) {
-            // Buscador triple
             try {
                 const r1 = await fetch(`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${ean}&page_size=1`);
                 const d1 = await r1.json();
                 if (d1.results && d1.results.length > 0) return d1.results[0].name;
-
                 const r2 = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${ean}`);
                 const d2 = await r2.json();
                 if (d2.totalItems > 0) return d2.items[0].volumeInfo.title;
-
                 return null;
             } catch (e) { return null; }
         }
 
-        function stopScanner() {
+        function closeCamera() {
             if (html5QrCode) {
-                html5QrCode.stop().then(() => {
+                html5QrCode.stop().finally(() => {
                     document.getElementById('camera-overlay').style.display = 'none';
-                }).catch(() => {
-                    document.getElementById('camera-overlay').style.display = 'none';
+                    document.getElementById('scan-line').style.display = "none";
                 });
             } else {
                 document.getElementById('camera-overlay').style.display = 'none';
             }
         }
 
-        // EL RESTO DE TUS FUNCIONES (Firebase, Render, etc.)
+        // --- SISTEMA DE RENDER Y FIREBASE (MANTENIDO) ---
+
         function autoSelectGenero(genres) {
             if (!genres || genres.length === 0) return;
             const principal = genres[0].name.toUpperCase();
@@ -311,7 +353,7 @@
                 section.appendChild(grid);
                 container.appendChild(section);
             });
-            document.getElementById('info-footer').innerText = `TOTAL: ${filtrados.length} JUEGOS | v1.3`;
+            document.getElementById('info-footer').innerText = `TOTAL: ${filtrados.length} JUEGOS | v1.6`;
         }
 
         function agregarJuego() {
