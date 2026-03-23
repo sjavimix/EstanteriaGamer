@@ -20,8 +20,11 @@ const assets = [
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      console.log('Cache abierto y limpiando duplicados...');
-      return cache.addAll(assets);
+      console.log('Intentando cachear archivos...');
+      // Usamos map para intentar cargar uno a uno y que si uno falla no rompa todo
+      return Promise.allSettled(
+        assets.map(url => cache.add(url))
+      ).then(() => console.log('Proceso de cache finalizado (con o sin errores individuales)'));
     })
   );
 });
