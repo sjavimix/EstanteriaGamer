@@ -1,7 +1,6 @@
-const CACHE_NAME = 'gamershelf-v1';
+const CACHE_NAME = 'gamershelf-v1.1'; // He subido la versión para forzar la actualización
 const assets = [
-  './',
-  './index.html',
+  './', // Este ya cuenta como index.html, no hace falta ponerlo de nuevo
   './imagenes/ps1.png',
   './imagenes/ps2.png',
   './imagenes/ps3.png',
@@ -12,15 +11,25 @@ const assets = [
   './imagenes/xbox_one_series.png',
   './imagenes/gamecube.png',
   './imagenes/n_switch.png',
-  './index.html',
   './imagenes/titulo.png',
-  './imagenes/skin1.png'
+  './imagenes/skin1.png',
+  './imagenes/escudo.png', // Añadidos los que faltaban según tu código
+  './imagenes/pocion.png'
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(assets)));
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      console.log('Cache abierto y limpiando duplicados...');
+      return cache.addAll(assets);
+    })
+  );
 });
 
 self.addEventListener('fetch', e => {
-  e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
+  e.respondWith(
+    caches.match(e.request).then(res => {
+      return res || fetch(e.request);
+    })
+  );
 });
