@@ -5,19 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GamerShelf Pro v1.1</title>
     <meta name="theme-color" content="#107c10">
-	<link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json">
 
-	<script>
-	  if ('serviceWorker' in navigator) {
-		navigator.serviceWorker.register('sw.js');
-	  }
-	</script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+      }
+    </script>
     
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #000000; color: #e0e0e0; margin: 0; padding: 20px; padding-bottom: 80px; }
         header { max-width: 900px; margin: 0 auto 30px; text-align: center; }
         .header-logo { max-width: 100%; height: auto; margin-top: 10px; }
         
+        /* Pantalla de Login */
+        #login-screen { text-align: center; margin-top: 100px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        .btn-google { background: white; color: #444; padding: 12px 24px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 1rem; }
+        
+        #app-content { display: none; } /* Oculto hasta que se loguee */
+
         .tools-container { 
             max-width: 900px; margin: 0 auto 40px; padding: 25px; 
             background: #1a1a1a; border-radius: 15px; border: 1px solid #333; 
@@ -43,7 +49,7 @@
         .suggestion-item img { width: 40px; height: 55px; object-fit: cover; border-radius: 3px; }
 
         .btn-add { cursor:pointer; background:#44cf6c; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; color: #000; transition: 0.3s; }
-        .btn-add:hover { background: #38b85d; }
+        .btn-logout { background: none; border: 1px solid #444; color: #888; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.7rem; margin-top: 10px; }
 
         .console-section { background: #161616; border-radius: 15px; margin-bottom: 30px; padding: 20px; border: 1px solid #222; }
         .console-header { display: flex; align-items: center; gap: 15px; border-bottom: 2px solid #44cf6c; padding-bottom: 10px; margin-bottom: 20px; }
@@ -56,88 +62,98 @@
         .game-thumb { width: 35px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid #444; }
         .game-title { flex-grow: 1; }
         .btn-del { color: #555; background: none; border: none; cursor: pointer; font-size: 1rem; }
-        .btn-del:hover { color: #ff4444; }
 
-        .footer-info { position: fixed; bottom: 0; left: 0; width: 100%; background: #107c10; color: white; text-align: center; padding-top: 1px; font-weight: bold; z-index: 100; transition: background 0.5s; }
+        .footer-info { position: fixed; bottom: 0; left: 0; width: 100%; background: #107c10; color: white; text-align: center; padding: 5px 0; font-weight: bold; z-index: 100; transition: background 0.5s; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
-    <header>
-        <img src="imagenes/titulo.png" alt="GamerShelf Pro" class="header-logo">
-        <div class="tools-container">
-            <img src="imagenes/skin1.png" alt="Skin" style="height: 152px; margin-top: -40px; margin-bottom: -10px; align-self: center;">
-            <img src="imagenes/escudo.png" class="deco-img img-escudo" alt="Escudo">
-            <img src="imagenes/pocion.png" class="deco-img img-pocion" alt="Poción">
+    <div id="login-screen">
+        <img src="imagenes/titulo.png" alt="GamerShelf Pro" style="max-width: 80%;">
+        <p>Tu colección de videojuegos en la nube.</p>
+        <button class="btn-google" onclick="login()">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="20">
+            Entrar con Google
+        </button>
+    </div>
 
-            <input type="text" id="buscador" placeholder="Buscar en mi colección...">
-            
-            <div class="form-row">
-                <div class="autocomplete-container">
-                    <input type="text" id="add-titulo" class="input-add" placeholder="Escribe el título del juego...">
-                    <div id="suggestions" class="suggestions"></div>
-                </div>
+    <div id="app-content">
+        <header>
+            <img src="imagenes/titulo.png" alt="GamerShelf Pro" class="header-logo">
+            <div class="tools-container">
+                <img src="imagenes/skin1.png" alt="Skin" style="height: 152px; margin-top: -40px; margin-bottom: -10px; align-self: center;">
+                <img src="imagenes/escudo.png" class="deco-img img-escudo" alt="Escudo">
+                <img src="imagenes/pocion.png" class="deco-img img-pocion" alt="Poción">
+
+                <input type="text" id="buscador" placeholder="Buscar en mi colección...">
                 
-                <select id="add-genero" class="select-add" style="flex: 1; min-width: 120px;">
-                    <option value="RPG">RPG</option>
-                    <option value="PLATAFORMAS">PLATAFORMAS</option>
-                    <option value="LUCHA">LUCHA</option>
-                    <option value="TERROR">TERROR</option>
-                    <option value="SHOOTER">SHOOTER</option>
-                    <option value="AVENTURA">AVENTURA</option>
-                    <option value="CONDUCCION">CONDUCCIÓN</option>
-                    <option value="DEPORTES">DEPORTES</option>
-                    <option value="METROIDVANIA">METROIDVANIA</option>
-                    <option value="NAVES">NAVES</option>
-                    <option value="ESTRATEGIA">ESTRATEGIA</option> 
-                    <option value="OTROS">OTROS</option>
-                </select>
+                <div class="form-row">
+                    <div class="autocomplete-container">
+                        <input type="text" id="add-titulo" class="input-add" placeholder="Escribe el título del juego...">
+                        <div id="suggestions" class="suggestions"></div>
+                    </div>
+                    
+                    <select id="add-genero" class="select-add" style="flex: 1; min-width: 120px;">
+                        <option value="RPG">RPG</option>
+                        <option value="PLATAFORMAS">PLATAFORMAS</option>
+                        <option value="LUCHA">LUCHA</option>
+                        <option value="TERROR">TERROR</option>
+                        <option value="SHOOTER">SHOOTER</option>
+                        <option value="AVENTURA">AVENTURA</option>
+                        <option value="CONDUCCION">CONDUCCIÓN</option>
+                        <option value="DEPORTES">DEPORTES</option>
+                        <option value="METROIDVANIA">METROIDVANIA</option>
+                        <option value="NAVES">NAVES</option>
+                        <option value="ESTRATEGIA">ESTRATEGIA</option> 
+                        <option value="OTROS">OTROS</option>
+                    </select>
 
-                                <select id="add-consola" class="select-add">
-                    <optgroup label="Sony">
-                        <option value="ps1">PS1</option>
-                        <option value="ps2">PS2</option>
-                        <option value="ps3">PS3</option>
-                        <option value="ps4">PS4</option>
-                        <option value="ps5">PS5</option>
-                    </optgroup>
-                    <optgroup label="Microsoft">
-                        <option value="xbox_clasica">Xbox Clásica</option>
-                        <option value="xbox_360">Xbox 360</option>
-                        <option value="xbox_one_series" selected>Xbox One/Series</option>
-                    </optgroup>
-                    <optgroup label="Nintendo">
-                        <option value="gameboy">Game Boy</option>
-                        <option value="nintendo">NES</option>
-                        <option value="super_nintendo">Super Nintendo</option>
-                        <option value="n64">Nintendo 64</option>
-                        <option value="gamecube">GameCube</option>
-                        <option value="wii">Wii</option>
-                        <option value="wii_u">Wii U</option>
-                        <option value="n_switch">Switch</option>
-                    </optgroup>
-                    <optgroup label="Sega">
-                        <option value="mastersystem2">Master System II</option>
-                        <option value="megadrive">Mega Drive</option>
-                        <option value="gamegear">Game Gear</option>
-                        <option value="saturn">Sega Saturn</option>
-                        <option value="dreamcast">Dreamcast</option>
-                    </optgroup>
-                    <optgroup label="Otras">
-                        <option value="pcengine">PC Engine</option>
-                    </optgroup>
-                </select>
+                    <select id="add-consola" class="select-add">
+                        <optgroup label="Sony">
+                            <option value="ps1">PS1</option>
+                            <option value="ps2">PS2</option>
+                            <option value="ps3">PS3</option>
+                            <option value="ps4">PS4</option>
+                            <option value="ps5">PS5</option>
+                        </optgroup>
+                        <optgroup label="Microsoft">
+                            <option value="xbox_clasica">Xbox Clásica</option>
+                            <option value="xbox_360">Xbox 360</option>
+                            <option value="xbox_one_series" selected>Xbox One/Series</option>
+                        </optgroup>
+                        <optgroup label="Nintendo">
+                            <option value="gameboy">Game Boy</option>
+                            <option value="nintendo">NES</option>
+                            <option value="super_nintendo">Super Nintendo</option>
+                            <option value="n64">Nintendo 64</option>
+                            <option value="gamecube">GameCube</option>
+                            <option value="wii">Wii</option>
+                            <option value="wii_u">Wii U</option>
+                            <option value="n_switch">Switch</option>
+                        </optgroup>
+                        <optgroup label="Sega">
+                            <option value="mastersystem2">Master System II</option>
+                            <option value="megadrive">Mega Drive</option>
+                            <option value="gamegear">Game Gear</option>
+                            <option value="saturn">Sega Saturn</option>
+                            <option value="dreamcast">Dreamcast</option>
+                        </optgroup>
+                    </select>
 
-                <button onclick="agregarJuego()" class="btn-add" style="margin-top: 14px;">AÑADIR</button>
+                    <button onclick="agregarJuego()" class="btn-add" style="margin-top: 14px;">AÑADIR</button>
+                </div>
+                <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
             </div>
-        </div>
-    </header>
+        </header>
 
-    <div id="main-container"></div>
-    <div id="info-footer" class="footer-info">v1.1 | Nube Directa</div>
+        <div id="main-container"></div>
+    </div>
+
+    <div id="info-footer" class="footer-info">Inicia sesión para continuar</div>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
     <script>
         const firebaseConfig = {
@@ -151,13 +167,40 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const auth = firebase.auth();
         const RAWG_KEY = "21c0ccfd8ada49c6b44092b79b9bfbbb";
         
         let db_local = [];
         let fotoSeleccionada = "";
         let typingTimer;
         let bloqueoFooter = false;
+        let currentUser = null;
 
+        // --- GESTIÓN DE USUARIO ---
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-content').style.display = 'block';
+                refreshData();
+            } else {
+                currentUser = null;
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('app-content').style.display = 'none';
+                document.getElementById('info-footer').innerText = "v1.1 | Nube Directa";
+            }
+        });
+
+        function login() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithRedirect(provider);
+        }
+
+        function logout() {
+            auth.signOut();
+        }
+
+        // --- LÓGICA DE JUEGOS ---
         const inputTitulo = document.getElementById('add-titulo');
         const suggestionsBox = document.getElementById('suggestions');
 
@@ -206,7 +249,11 @@
         }
 
         function refreshData() {
-            db.collection("juegos").orderBy("titulo").onSnapshot(snap => {
+            if(!currentUser) return;
+            // FILTRO CRITICO: Solo cargamos juegos cuyo userId coincida con el usuario actual
+            db.collection("juegos")
+              .where("userId", "==", currentUser.uid)
+              .onSnapshot(snap => {
                 db_local = [];
                 snap.forEach(doc => db_local.push({ id: doc.id, ...doc.data() }));
                 render(document.getElementById('buscador').value);
@@ -256,7 +303,7 @@
             });
 
             if (!bloqueoFooter) {
-                document.getElementById('info-footer').innerText = `TOTAL: ${filtrados.length} JUEGOS`;
+                document.getElementById('info-footer').innerText = `TOTAL: ${filtrados.length} JUEGOS | Hola, ${currentUser.displayName.split(' ')[0]}`;
                 document.getElementById('info-footer').style.background = "#107c10";
             }
         }
@@ -265,52 +312,50 @@
             const t = inputTitulo.value.trim();
             const g = document.getElementById('add-genero').value;
             const c = document.getElementById('add-consola').value;
-            if(!t) return;
+            if(!t || !currentUser) return;
+
+            const yaExiste = db_local.find(j => j.titulo.toUpperCase() === t.toUpperCase() && j.consola === c);
+            if (yaExiste) {
+                mostrarFeedback(`⚠️ YA EXISTE EN ${c.toUpperCase()}`, "#f39c12");
+                return;
+            }
 
             db.collection("juegos").add({
-                titulo: t, genero: g, consola: c, foto: fotoSeleccionada, fecha: new Date()
+                titulo: t, 
+                genero: g, 
+                consola: c, 
+                foto: fotoSeleccionada, 
+                fecha: new Date(),
+                userId: currentUser.uid // GUARDAMOS EL ID DEL DUEÑO
             }).then(() => {
-                const tituloMostrado = t.toUpperCase();
+                mostrarFeedback(`✅ AÑADIDO: ${t.toUpperCase()}`, "#2ecc71");
                 inputTitulo.value = "";
                 fotoSeleccionada = "";
                 suggestionsBox.style.display = "none";
-
-                const footer = document.getElementById('info-footer');
-                bloqueoFooter = true;
-                footer.innerText = `✅ AÑADIDO: ${tituloMostrado}`;
-                footer.style.background = "#2ecc71";
-
-                setTimeout(() => {
-                    bloqueoFooter = false;
-                    render(document.getElementById('buscador').value);
-                }, 5000);
-
-            }).catch(err => alert("Error al guardar: " + err));
+            });
         }
 
         function borrarJuego(id) {
-            // Buscamos el juego en nuestra lista local para saber su título
             const juego = db_local.find(j => j.id === id);
-            const titulo = juego ? juego.titulo.toUpperCase() : "este juego";
-
-            if(confirm(`¿Seguro que quieres eliminar ${titulo}?`)) {
+            if(confirm(`¿Eliminar ${juego.titulo.toUpperCase()}?`)) {
                 db.collection("juegos").doc(id).delete().then(() => {
-                    // Feedback visual en el footer al eliminar
-                    const footer = document.getElementById('info-footer');
-                    bloqueoFooter = true;
-                    footer.innerText = `❌ ELIMINADO: ${titulo}`;
-                    footer.style.background = "#e74c3c"; // Rojo para indicar eliminación
-
-                    setTimeout(() => {
-                        bloqueoFooter = false;
-                        render(document.getElementById('buscador').value);
-                    }, 5000);
+                    mostrarFeedback(`❌ ELIMINADO: ${juego.titulo.toUpperCase()}`, "#e74c3c");
                 });
             }
         }
 
+        function mostrarFeedback(msg, color) {
+            const footer = document.getElementById('info-footer');
+            bloqueoFooter = true;
+            footer.innerText = msg;
+            footer.style.background = color;
+            setTimeout(() => {
+                bloqueoFooter = false;
+                render(document.getElementById('buscador').value);
+            }, 4000);
+        }
+
         document.getElementById('buscador').addEventListener('input', (e) => render(e.target.value));
-        refreshData();
     </script>
 </body>
 </html>
