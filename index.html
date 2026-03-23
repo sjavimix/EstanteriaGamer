@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GamerShelf Pro v1.1</title>
+    <title>GamerShelf Pro v1.2</title>
     <meta name="theme-color" content="#107c10">
     <link rel="manifest" href="manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
@@ -66,14 +66,21 @@
         .game-title { flex-grow: 1; }
         .btn-del { color: #555; background: none; border: none; cursor: pointer; }
 
+        /* OVERLAY CÁMARA MEJORADO */
         #camera-overlay { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.95); z-index: 100000; flex-direction: column; align-items: center; justify-content: center; 
         }
-        #video-preview { width: 90%; max-width: 400px; border: 2px solid #44cf6c; border-radius: 10px; position: relative; overflow: hidden; }
-        #video-preview video { width: 100%; vertical-align: middle; }
+        #video-preview { width: 90%; max-width: 500px; border: 3px solid #44cf6c; border-radius: 15px; position: relative; overflow: hidden; background: #000; }
+        #video-preview video { width: 100%; height: auto; display: block; }
+        /* Línea de escaneo animada */
+        #video-preview::after {
+            content: ""; position: absolute; top: 50%; left: 0; width: 100%; height: 2px; 
+            background: rgba(68, 207, 108, 0.7); box-shadow: 0 0 10px #44cf6c; animation: scan 2s infinite;
+        }
+        @keyframes scan { 0% { top: 10%; } 50% { top: 90%; } 100% { top: 10%; } }
+
         .cam-controls { margin-top: 20px; display: flex; gap: 10px; }
-        
         .footer-info { position: fixed; bottom: 0; left: 0; width: 100%; background: #107c10; color: white; text-align: center; padding: 10px; font-weight: bold; z-index: 100; }
     </style>
 </head>
@@ -124,7 +131,7 @@
                         <option value="xbox_one_series" selected>Xbox One/Series</option>
                     </optgroup>
                     <optgroup label="Nintendo">
-                        <option value="gameboy">Game Boy</option
+                        <option value="gameboy">Game Boy</option>
                         <option value="nintendo">NES</option>
                         <option value="super_nintendo">Super Nintendo</option>
                         <option value="n64">Nintendo 64</option>
@@ -157,16 +164,16 @@
     </header>
 
     <div id="camera-overlay">
-        <h3 style="color: #44cf6c; text-align: center;">Enfoca el CÓDIGO DE BARRAS</h3>
+        <h3 style="color: #44cf6c; text-align: center; margin-bottom: 10px;">ESCANEANDO CÓDIGO</h3>
         <div id="video-preview"></div>
         <div class="cam-controls">
-            <button onclick="stopCamera()" style="padding: 15px 40px; background: #ff4444; border: none; border-radius: 10px; color: white; font-weight: bold; cursor:pointer;">CANCELAR</button>
+            <button onclick="stopCamera()" style="padding: 15px 40px; background: #ff4444; border: none; border-radius: 10px; color: white; font-weight: bold; cursor:pointer;">CERRAR</button>
         </div>
-        <p id="ocr-status" style="margin-top: 15px; color: #888; font-weight: bold;"></p>
+        <p id="ocr-status" style="margin-top: 15px; color: #44cf6c; font-weight: bold; text-align: center; min-height: 20px;"></p>
     </div>
 
     <div id="main-container"></div>
-    <div id="info-footer" class="footer-info">v1.1 | Conectando...</div>
+    <div id="info-footer" class="footer-info">v1.2 | Cargando base de datos...</div>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -187,89 +194,111 @@
         const RAWG_KEY = "21c0ccfd8ada49c6b44092b79b9bfbbb";
         let db_local = [];
         let fotoSeleccionada = "";
+        let typingTimer;
 
         const inputTitulo = document.getElementById('add-titulo');
         const suggestionsBox = document.getElementById('suggestions');
 
-        inputTitulo.addEventListener('input', () => buscarEnRAWG(inputTitulo.value));
+        inputTitulo.addEventListener('input', () => {
+            clearTimeout(typingTimer);
+            const query = inputTitulo.value.trim();
+            if (query.length >= 3) {
+                typingTimer = setTimeout(() => buscarEnRAWG(query), 500);
+            } else {
+                suggestionsBox.style.display = "none";
+            }
+        });
 
         async function buscarEnRAWG(q) {
-            if (q.length < 3) { suggestionsBox.style.display = "none"; return; }
-            const res = await fetch(`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${q}&page_size=5`);
-            const data = await res.json();
-            suggestionsBox.innerHTML = "";
-            if (data.results && data.results.length > 0) {
-                suggestionsBox.style.display = "block";
-                data.results.forEach(game => {
-                    const div = document.createElement('div');
-                    div.className = "suggestion-item";
-                    div.innerHTML = `<img src="${game.background_image || ''}"> <span>${game.name}</span>`;
-                    div.onclick = () => {
-                        inputTitulo.value = game.name.toUpperCase();
-                        fotoSeleccionada = game.background_image;
-                        suggestionsBox.style.display = "none";
-                        autoSelectGenero(game.genres);
-                    };
-                    suggestionsBox.appendChild(div);
-                });
-            }
+            try {
+                const res = await fetch(`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${encodeURIComponent(q)}&page_size=5`);
+                const data = await res.json();
+                suggestionsBox.innerHTML = "";
+                if (data.results && data.results.length > 0) {
+                    suggestionsBox.style.display = "block";
+                    data.results.forEach(game => {
+                        const div = document.createElement('div');
+                        div.className = "suggestion-item";
+                        div.innerHTML = `<img src="${game.background_image || ''}"> <span>${game.name}</span>`;
+                        div.onclick = () => {
+                            inputTitulo.value = game.name.toUpperCase();
+                            fotoSeleccionada = game.background_image;
+                            suggestionsBox.style.display = "none";
+                            autoSelectGenero(game.genres);
+                        };
+                        suggestionsBox.appendChild(div);
+                    });
+                }
+            } catch (e) { console.error("Error API:", e); }
         }
 
-        // --- FUNCIÓN MEJORADA: BUSCA EN MÚLTIPLES BASES DE DATOS ---
+        // MOTOR DE BÚSQUEDA TRIPLE (EAN/ISBN)
         async function obtenerTituloPorEAN(ean) {
+            document.getElementById('ocr-status').innerText = "Buscando: " + ean;
             try {
-                // Paso 1: Intentar en RAWG (buscando coincidencia exacta del código)
+                // 1. Google Books (Excelente para juegos con ISBN)
+                const resGB = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${ean}`);
+                const dataGB = await resGB.json();
+                if (dataGB.totalItems > 0) return dataGB.items[0].volumeInfo.title;
+
+                // 2. RAWG Directo
                 const resRawg = await fetch(`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${ean}&page_size=1`);
                 const dataRawg = await resRawg.json();
                 if (dataRawg.results && dataRawg.results.length > 0 && !dataRawg.results[0].name.includes(ean)) {
                     return dataRawg.results[0].name;
                 }
 
-                // Paso 2: Intentar en Open Library (API gratuita muy buena con EAN/ISBN)
+                // 3. Open Library
                 const resOL = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${ean}&format=json&jscmd=data`);
                 const dataOL = await resOL.json();
-                if (dataOL[`ISBN:${ean}`]) {
-                    return dataOL[`ISBN:${ean}`].title;
-                }
+                if (dataOL[`ISBN:${ean}`]) return dataOL[`ISBN:${ean}`].title;
 
                 return null;
             } catch (e) { return null; }
         }
 
+        // ESCÁNER REFORZADO
         function startCamera() {
             document.getElementById('camera-overlay').style.display = 'flex';
-            document.getElementById('ocr-status').innerText = "Buscando líneas de código...";
+            document.getElementById('ocr-status').innerText = "Apunte al código de barras";
+            
             Quagga.init({
                 inputStream: {
                     name: "Live",
                     type: "LiveStream",
                     target: document.querySelector('#video-preview'),
-                    constraints: { facingMode: "environment" }
+                    constraints: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: "environment",
+                        focusMode: "continuous" // Vital para leer códigos pequeños
+                    },
                 },
-                decoder: { readers: ["ean_reader", "upc_reader", "code_128_reader"] }
+                locator: { patchSize: "medium", halfSample: true },
+                decoder: { 
+                    readers: ["ean_reader", "ean_8_reader", "upc_reader", "code_128_reader"] 
+                }
             }, function(err) {
-                if (err) { alert("Error cámara: " + err); return; }
+                if (err) { alert("Error cámara: " + err); stopCamera(); return; }
                 Quagga.start();
             });
 
             Quagga.onDetected(async (data) => {
                 const code = data.codeResult.code;
-                if(code) {
-                    navigator.vibrate(100);
+                if(code && code.length >= 8) {
                     Quagga.stop();
-                    document.getElementById('ocr-status').innerText = "Identificando juego...";
+                    navigator.vibrate(100);
+                    document.getElementById('ocr-status').innerText = "¡Código detectado! Buscando...";
                     
                     const tituloIdentificado = await obtenerTituloPorEAN(code);
                     
-                    stopCamera();
                     if(tituloIdentificado) {
                         inputTitulo.value = tituloIdentificado.toUpperCase();
-                        buscarEnRAWG(tituloIdentificado); // Busca la foto automáticamente
+                        stopCamera();
+                        buscarEnRAWG(tituloIdentificado); // Para traer la foto
                     } else {
-                        // Si falla, dejamos el código para que el usuario lo vea y escriba el nombre
-                        alert("Juego no identificado. Escribe el nombre manualmente.");
-                        inputTitulo.value = "";
-                        inputTitulo.focus();
+                        document.getElementById('ocr-status').innerText = "No encontrado. Reintentando...";
+                        setTimeout(() => Quagga.start(), 2000);
                     }
                 }
             });
@@ -286,8 +315,7 @@
             const select = document.getElementById('add-genero');
             for (let opt of select.options) {
                 if (principal.includes(opt.value) || opt.value.includes(principal)) {
-                    select.value = opt.value;
-                    break;
+                    select.value = opt.value; break;
                 }
             }
         }
