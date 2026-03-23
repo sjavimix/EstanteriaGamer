@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GamerShelf Pro v1.1</title>
+    <meta name="theme-color" content="#107c10">
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    
+    <style>
+        /* Estilos base */
+        body { font-family: 'Segoe UI', sans-serif; background: #000000; color: #e0e0e0; margin: 0; padding: 20px; padding-bottom: 80px; }
+        header { max-width: 900px; margin: 0 auto 30px; text-align: center; }
+        .header-logo { max-width: 100%; height: auto; margin-top: 10px; }
+        
+        .tools-container { 
+            max-width: 900px; margin: 0 auto 40px; padding: 25px; 
+            background: #1a1a1a; border-radius: 15px; border: 1px solid #333; 
+            position: relative; display: flex; flex-direction: column; gap: 15px;
+            overflow: visible !important; 
+        }
+
+        .deco-img { position: absolute; top: 10px; width: 38px; height: auto; filter: drop-shadow(0px 0px 8px rgba(0,0,0,0.5)); z-index: 1; }
+        .img-escudo { left: 20px; }
+        .img-pocion { right: 20px; }
+
+        .form-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; position: relative; z-index: 50; }
+        #buscador { padding: 12px 25px; border-radius: 25px; border: 2px solid #333; background: #1e1e1e; color: white; width: 80%; outline: none; margin-bottom: 10px; align-self: center; }
+        
+        .autocomplete-container { position: relative; flex: 2; min-width: 200px; display: flex; gap: 5px; }
+        .input-add, .select-add { padding: 10px; border-radius: 8px; border: 1px solid #444; background: #252525; color: white; width: 100%; box-sizing: border-box; }
+        .btn-cam { background: #333; border: 1px solid #44cf6c; border-radius: 8px; cursor: pointer; padding: 0 12px; font-size: 1.2rem; color: white; }
+
+        .suggestions {
+            position: absolute; 
+            top: 100%; 
+            left: 0; 
+            right: 0;
+            background: #252525; 
+            border: 2px solid #44cf6c; 
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            z-index: 99999 !important;
+            max-height: 250px; 
+            overflow-y: auto; 
+            display: none;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.9);
+        }
+        .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 10px; background: #252525; }
+        .suggestion-item:hover { background: #333; }
+        .suggestion-item img { width: 40px; height: 55px; object-fit: cover; border-radius: 3px; }
+
+        .btn-add { cursor:pointer; background:#44cf6c; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; color: #000; }
+        .btn-backup { padding: 10px 20px; border-radius: 8px; border: none; color: white; font-size: 0.85rem; font-weight: bold; cursor: pointer; flex: 1; }
+
+        .console-section { background: #161616; border-radius: 15px; margin-bottom: 30px; padding: 20px; border: 1px solid #222; }
+        .console-header { display: flex; align-items: center; gap: 15px; border-bottom: 2px solid #44cf6c; padding-bottom: 10px; margin-bottom: 20px; }
+        .console-header img { height: 40px; width: auto; background: white; padding: 3px; border-radius: 5px; }
+        .genres-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .genre-box { background: #1e1e1e; padding: 12px; border-radius: 8px; }
+        
+        ul { list-style: none; padding: 0; }
+        li { padding: 8px; border-bottom: 1px solid #2a2a2a; font-size: 0.85rem; display: flex; align-items: center; gap: 12px; }
+        .game-thumb { width: 35px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid #444; }
+        .game-title { flex-grow: 1; }
+        .btn-del { color: #555; background: none; border: none; cursor: pointer; }
+
+        #camera-overlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.95); z-index: 100000; flex-direction: column; align-items: center; justify-content: center; 
+        }
+        #video-preview { width: 90%; max-width: 400px; border: 2px solid #44cf6c; border-radius: 10px; position: relative; overflow: hidden; }
+        #video-preview video { width: 100%; vertical-align: middle; }
+        .cam-controls { margin-top: 20px; display: flex; gap: 10px; }
+        
+        .footer-info { position: fixed; bottom: 0; left: 0; width: 100%; background: #107c10; color: white; text-align: center; padding: 10px; font-weight: bold; z-index: 100; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <img src="imagenes/titulo.png" alt="GamerShelf Pro" class="header-logo">
+        <div class="tools-container">
+            <img src="imagenes/skin1.png" alt="Skin" style="height: 152px; margin-top: -40px; margin-bottom: -10px; align-self: center;">
+            <img src="imagenes/escudo.png" class="deco-img img-escudo" alt="Escudo">
+            <img src="imagenes/pocion.png" class="deco-img img-pocion" alt="Poción">
+
+            <input type="text" id="buscador" placeholder="Buscar en mi colección...">
+            
+            <div class="form-row">
+                <div class="autocomplete-container">
+                    <input type="text" id="add-titulo" class="input-add" placeholder="Título o Código Barras...">
+                    <button class="btn-cam" onclick="startCamera()">📷</button>
+                    <div id="suggestions" class="suggestions"></div>
+                </div>
+                
+                <select id="add-genero" class="select-add" style="flex: 1; min-width: 120px;">
+                    <option value="RPG">RPG</option>
+                    <option value="PLATAFORMAS">PLATAFORMAS</option>
+                    <option value="LUCHA">LUCHA</option>
+                    <option value="TERROR">TERROR</option>
+                    <option value="SHOOTER">SHOOTER</option>
+                    <option value="AVENTURA">AVENTURA</option>
+                    <option value="CONDUCCION">CONDUCCIÓN</option>
+                    <option value="DEPORTES">DEPORTES</option>
+                    <option value="METROIDVANIA">METROIDVANIA</option>
+                    <option value="NAVES">NAVES</option>
+                    <option value="ESTRATEGIA">ESTRATEGIA</option> 
+                    <option value="OTROS">OTROS</option>
+                </select>
+
+                <select id="add-consola" class="select-add">
+                    <optgroup label="Sony">
+                        <option value="ps1">PS1</option>
+                        <option value="ps2">PS2</option>
+                        <option value="ps3">PS3</option>
+                        <option value="ps4">PS4</option>
+                        <option value="ps5">PS5</option>
+                    </optgroup>
+                    <optgroup label="Microsoft">
+                        <option value="xbox_clasica">Xbox Clásica</option>
+                        <option value="xbox_360">Xbox 360</option>
+                        <option value="xbox_one_series" selected>Xbox One/Series</option>
+                    </optgroup>
+                    <optgroup label="Nintendo">
+                        <option value="gameboy">Game Boy</option
+                        <option value="nintendo">NES</option>
+                        <option value="super_nintendo">Super Nintendo</option>
+                        <option value="n64">Nintendo 64</option>
+                        <option value="gamecube">GameCube</option>
+                        <option value="wii">Wii</option>
+                        <option value="wii_u">Wii U</option>
+                        <option value="n_switch">Switch</option>
+                    </optgroup>
+                    <optgroup label="Sega">
+                        <option value="mastersystem2">Master System II</option>
+                        <option value="megadrive">Mega Drive</option>
+                        <option value="gamegear">Game Gear</option>
+                        <option value="saturn">Sega Saturn</option>
+                        <option value="dreamcast">Dreamcast</option>
+                    </optgroup>
+                    <optgroup label="Otras">
+                        <option value="pcengine">PC Engine</option>
+                    </optgroup>
+                </select>
+
+                <button onclick="agregarJuego()" class="btn-add">AÑADIR</button>
+            </div>
+
+            <div class="form-row" style="margin-top: 10px; border-top: 1px solid #333; padding-top: 15px;">
+                <button onclick="exportarDatos()" class="btn-backup" style="background: #3498db;">💾 Guardar JSON</button>
+                <label for="import-file" class="btn-backup" style="background: #e67e22; cursor: pointer; text-align:center;">📂 Importar JSON</label>
+                <input type="file" id="import-file" style="display: none;" onchange="importarDatos(event)">
+            </div>
+        </div>
+    </header>
+
+    <div id="camera-overlay">
+        <h3 style="color: #44cf6c; text-align: center;">Enfoca el CÓDIGO DE BARRAS</h3>
+        <div id="video-preview"></div>
+        <div class="cam-controls">
+            <button onclick="stopCamera()" style="padding: 15px 40px; background: #ff4444; border: none; border-radius: 10px; color: white; font-weight: bold; cursor:pointer;">CANCELAR</button>
+        </div>
+        <p id="ocr-status" style="margin-top: 15px; color: #888; font-weight: bold;"></p>
+    </div>
+
+    <div id="main-container"></div>
+    <div id="info-footer" class="footer-info">v1.1 | Conectando...</div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAb3GqlzjbDTNxLGI8maiF3U0qGieGERdw",
+            authDomain: "estanteria-gamer.firebaseapp.com",
+            projectId: "estanteria-gamer",
+            storageBucket: "estanteria-gamer.firebasestorage.app",
+            messagingSenderId: "181559174957",
+            appId: "1:181559174957:web:7d6e99f7cd32632ba8d5a4",
+            measurementId: "G-V53Q0X6K56"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const RAWG_KEY = "21c0ccfd8ada49c6b44092b79b9bfbbb";
+        let db_local = [];
+        let fotoSeleccionada = "";
+
+        const inputTitulo = document.getElementById('add-titulo');
+        const suggestionsBox = document.getElementById('suggestions');
+
+        inputTitulo.addEventListener('input', () => buscarEnRAWG(inputTitulo.value));
+
+        async function buscarEnRAWG(q) {
+            if (q.length < 3) { suggestionsBox.style.display = "none"; return; }
+            const res = await fetch(`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${q}&page_size=5`);
+            const data = await res.json();
+            suggestionsBox.innerHTML = "";
+            if (data.results && data.results.length > 0) {
+                suggestionsBox.style.display = "block";
+                data.results.forEach(game => {
+                    const div = document.createElement('div');
+                    div.className = "suggestion-item";
+                    div.innerHTML = `<img src="${game.background_image || ''}"> <span>${game.name}</span>`;
+                    div.onclick = () => {
+                        inputTitulo.value = game.name.toUpperCase();
+                        fotoSeleccionada = game.background_image;
+                        suggestionsBox.style.display = "none";
+                        autoSelectGenero(game.genres);
+                    };
+                    suggestionsBox.appendChild(div);
+                });
+            }
+        }
+
+        // --- FUNCIÓN MEJORADA: BUSCA EN MÚLTIPLES BASES DE DATOS ---
+        async function obtenerTituloPorEAN(ean) {
+            try {
+                // Paso 1: Intentar en RAWG (buscando coincidencia exacta del código)
+                const resRawg = await fetch(`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${ean}&page_size=1`);
+                const dataRawg = await resRawg.json();
+                if (dataRawg.results && dataRawg.results.length > 0 && !dataRawg.results[0].name.includes(ean)) {
+                    return dataRawg.results[0].name;
+                }
+
+                // Paso 2: Intentar en Open Library (API gratuita muy buena con EAN/ISBN)
+                const resOL = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${ean}&format=json&jscmd=data`);
+                const dataOL = await resOL.json();
+                if (dataOL[`ISBN:${ean}`]) {
+                    return dataOL[`ISBN:${ean}`].title;
+                }
+
+                return null;
+            } catch (e) { return null; }
+        }
+
+        function startCamera() {
+            document.getElementById('camera-overlay').style.display = 'flex';
+            document.getElementById('ocr-status').innerText = "Buscando líneas de código...";
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#video-preview'),
+                    constraints: { facingMode: "environment" }
+                },
+                decoder: { readers: ["ean_reader", "upc_reader", "code_128_reader"] }
+            }, function(err) {
+                if (err) { alert("Error cámara: " + err); return; }
+                Quagga.start();
+            });
+
+            Quagga.onDetected(async (data) => {
+                const code = data.codeResult.code;
+                if(code) {
+                    navigator.vibrate(100);
+                    Quagga.stop();
+                    document.getElementById('ocr-status').innerText = "Identificando juego...";
+                    
+                    const tituloIdentificado = await obtenerTituloPorEAN(code);
+                    
+                    stopCamera();
+                    if(tituloIdentificado) {
+                        inputTitulo.value = tituloIdentificado.toUpperCase();
+                        buscarEnRAWG(tituloIdentificado); // Busca la foto automáticamente
+                    } else {
+                        // Si falla, dejamos el código para que el usuario lo vea y escriba el nombre
+                        alert("Juego no identificado. Escribe el nombre manualmente.");
+                        inputTitulo.value = "";
+                        inputTitulo.focus();
+                    }
+                }
+            });
+        }
+
+        function stopCamera() {
+            Quagga.stop();
+            document.getElementById('camera-overlay').style.display = 'none';
+        }
+
+        function autoSelectGenero(genres) {
+            if (!genres || genres.length === 0) return;
+            const principal = genres[0].name.toUpperCase();
+            const select = document.getElementById('add-genero');
+            for (let opt of select.options) {
+                if (principal.includes(opt.value) || opt.value.includes(principal)) {
+                    select.value = opt.value;
+                    break;
+                }
+            }
+        }
+
+        function refreshData() {
+            db.collection("juegos").orderBy("titulo").onSnapshot(snap => {
+                db_local = [];
+                snap.forEach(doc => db_local.push({ id: doc.id, ...doc.data() }));
+                render(document.getElementById('buscador').value);
+            });
+        }
+
+        function render(filtro = "") {
+            const container = document.getElementById('main-container');
+            container.innerHTML = "";
+            const filtrados = db_local.filter(j => j.titulo.toLowerCase().includes(filtro.toLowerCase()));
+            const porConsola = filtrados.reduce((acc, j) => { acc[j.consola] = acc[j.consola] || []; acc[j.consola].push(j); return acc; }, {});
+
+            Object.keys(porConsola).sort().forEach(c => {
+                const section = document.createElement('div');
+                section.className = 'console-section';
+                section.innerHTML = `<div class="console-header"><img src="imagenes/${c}.png" onerror="this.style.display='none'"><h2>${c.toUpperCase()} (${porConsola[c].length})</h2></div>`;
+                const grid = document.createElement('div');
+                grid.className = 'genres-grid';
+                const porGen = porConsola[c].reduce((acc, j) => { acc[j.genero] = acc[j.genero] || []; acc[j.genero].push(j); return acc; }, {});
+                Object.keys(porGen).sort().forEach(g => {
+                    const box = document.createElement('div');
+                    box.className = 'genre-box';
+                    box.innerHTML = `<h3>${g} <span>(${porGen[g].length})</span></h3>
+                        <ul>${porGen[g].map(j => `<li><img src="${j.foto || ''}" class="game-thumb"><span class="game-title">${j.titulo}</span><button class="btn-del" onclick="borrarJuego('${j.id}')">✕</button></li>`).join('')}</ul>`;
+                    grid.appendChild(box);
+                });
+                section.appendChild(grid);
+                container.appendChild(section);
+            });
+            document.getElementById('info-footer').innerText = `TOTAL: ${filtrados.length} JUEGOS`;
+        }
+
+        function agregarJuego() {
+            const t = inputTitulo.value.trim();
+            const g = document.getElementById('add-genero').value;
+            const c = document.getElementById('add-consola').value;
+            if(!t) return;
+            db.collection("juegos").add({ titulo: t, genero: g, consola: c, foto: fotoSeleccionada, fecha: new Date() })
+            .then(() => { inputTitulo.value = ""; fotoSeleccionada = ""; suggestionsBox.style.display="none"; });
+        }
+
+        function borrarJuego(id) { if(confirm("¿Eliminar?")) db.collection("juegos").doc(id).delete(); }
+
+        function exportarDatos() {
+            const blob = new Blob([JSON.stringify(db_local)], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = "GamerShelf_Backup.json"; a.click();
+        }
+
+        async function importarDatos(e) {
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const datos = JSON.parse(event.target.result);
+                for (const j of datos) await db.collection("juegos").add({...j, fecha: new Date()});
+            };
+            reader.readAsText(e.target.files[0]);
+        }
+
+        document.getElementById('buscador').addEventListener('input', (e) => render(e.target.value));
+        refreshData();
+    </script>
+</body>
+</html>
