@@ -11,7 +11,10 @@ const assets = [
   './imagenes/xbox_360.png',
   './imagenes/xbox_one_series.png',
   './imagenes/gamecube.png',
-  './imagenes/n_switch.png'
+  './imagenes/n_switch.png',
+  './index.html',
+  './imagenes/titulo.png',
+  './imagenes/skin1.png'
 ];
 
 self.addEventListener('install', e => {

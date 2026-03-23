@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GamerShelf Pro v1.1</title>
     <meta name="theme-color" content="#107c10">
+	<link rel="manifest" href="manifest.json">
+
+	<script>
+	  if ('serviceWorker' in navigator) {
+		navigator.serviceWorker.register('sw.js');
+	  }
+	</script>
     
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #000000; color: #e0e0e0; margin: 0; padding: 20px; padding-bottom: 80px; }

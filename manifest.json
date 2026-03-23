@@ -1,20 +1,22 @@
 {
-  "name": "GamerShelf por Sistemas",
+  "name": "GamerShelf Pro",
   "short_name": "GamerShelf",
-  "description": "Mi colección personal de videojuegos organizada por consolas y géneros.",
-  "start_url": "./index.html",
-  "scope": ".",
+  "description": "Mi colección personal de videojuegos",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#107c10",
-  "orientation": "portrait",
   "version": "1.1",
   "icons": [
     {
-      "src": "imagenes/icon.png",
+      "src": "imagenes/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "imagenes/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ]
 }
