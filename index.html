@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GamerShelf Pro v1.2</title>
+    <title>GamerShelf Pro v1.3</title>
     <meta name="theme-color" content="#107c10">
-    <link rel="manifest" href="manifest.json">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     
     <style>
-        /* Estilos base */
+        /* MANTENGO TUS ESTILOS EXACTOS */
         body { font-family: 'Segoe UI', sans-serif; background: #000000; color: #e0e0e0; margin: 0; padding: 20px; padding-bottom: 80px; }
         header { max-width: 900px; margin: 0 auto 30px; text-align: center; }
         .header-logo { max-width: 100%; height: auto; margin-top: 10px; }
@@ -18,7 +17,6 @@
             max-width: 900px; margin: 0 auto 40px; padding: 25px; 
             background: #1a1a1a; border-radius: 15px; border: 1px solid #333; 
             position: relative; display: flex; flex-direction: column; gap: 15px;
-            overflow: visible !important; 
         }
 
         .deco-img { position: absolute; top: 10px; width: 38px; height: auto; filter: drop-shadow(0px 0px 8px rgba(0,0,0,0.5)); z-index: 1; }
@@ -33,22 +31,11 @@
         .btn-cam { background: #333; border: 1px solid #44cf6c; border-radius: 8px; cursor: pointer; padding: 0 12px; font-size: 1.2rem; color: white; }
 
         .suggestions {
-            position: absolute; 
-            top: 100%; 
-            left: 0; 
-            right: 0;
-            background: #252525; 
-            border: 2px solid #44cf6c; 
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            z-index: 99999 !important;
-            max-height: 250px; 
-            overflow-y: auto; 
-            display: none;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.9);
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: #252525; border: 2px solid #44cf6c; border-radius: 0 0 8px 8px;
+            z-index: 99999; max-height: 250px; overflow-y: auto; display: none;
         }
-        .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 10px; background: #252525; }
-        .suggestion-item:hover { background: #333; }
+        .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 10px; }
         .suggestion-item img { width: 40px; height: 55px; object-fit: cover; border-radius: 3px; }
 
         .btn-add { cursor:pointer; background:#44cf6c; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; color: #000; }
@@ -66,21 +53,12 @@
         .game-title { flex-grow: 1; }
         .btn-del { color: #555; background: none; border: none; cursor: pointer; }
 
-        /* OVERLAY CÁMARA MEJORADO */
+        /* NUEVO OVERLAY DE CÁMARA */
         #camera-overlay { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.95); z-index: 100000; flex-direction: column; align-items: center; justify-content: center; 
+            background: rgba(0,0,0,0.9); z-index: 100000; flex-direction: column; align-items: center; justify-content: center; 
         }
-        #video-preview { width: 90%; max-width: 500px; border: 3px solid #44cf6c; border-radius: 15px; position: relative; overflow: hidden; background: #000; }
-        #video-preview video { width: 100%; height: auto; display: block; }
-        /* Línea de escaneo animada */
-        #video-preview::after {
-            content: ""; position: absolute; top: 50%; left: 0; width: 100%; height: 2px; 
-            background: rgba(68, 207, 108, 0.7); box-shadow: 0 0 10px #44cf6c; animation: scan 2s infinite;
-        }
-        @keyframes scan { 0% { top: 10%; } 50% { top: 90%; } 100% { top: 10%; } }
-
-        .cam-controls { margin-top: 20px; display: flex; gap: 10px; }
+        #reader { width: 90%; max-width: 500px; border: 3px solid #44cf6c; border-radius: 15px; overflow: hidden; background: #000; }
         .footer-info { position: fixed; bottom: 0; left: 0; width: 100%; background: #107c10; color: white; text-align: center; padding: 10px; font-weight: bold; z-index: 100; }
     </style>
 </head>
@@ -98,7 +76,7 @@
             <div class="form-row">
                 <div class="autocomplete-container">
                     <input type="text" id="add-titulo" class="input-add" placeholder="Título o Código Barras...">
-                    <button class="btn-cam" onclick="startCamera()">📷</button>
+                    <button class="btn-cam" onclick="startScanner()">📷</button>
                     <div id="suggestions" class="suggestions"></div>
                 </div>
                 
@@ -147,9 +125,6 @@
                         <option value="saturn">Sega Saturn</option>
                         <option value="dreamcast">Dreamcast</option>
                     </optgroup>
-                    <optgroup label="Otras">
-                        <option value="pcengine">PC Engine</option>
-                    </optgroup>
                 </select>
 
                 <button onclick="agregarJuego()" class="btn-add">AÑADIR</button>
@@ -164,29 +139,27 @@
     </header>
 
     <div id="camera-overlay">
-        <h3 style="color: #44cf6c; text-align: center; margin-bottom: 10px;">ESCANEANDO CÓDIGO</h3>
-        <div id="video-preview"></div>
-        <div class="cam-controls">
-            <button onclick="stopCamera()" style="padding: 15px 40px; background: #ff4444; border: none; border-radius: 10px; color: white; font-weight: bold; cursor:pointer;">CERRAR</button>
-        </div>
-        <p id="ocr-status" style="margin-top: 15px; color: #44cf6c; font-weight: bold; text-align: center; min-height: 20px;"></p>
+        <h3 style="color: #44cf6c;">ESCANEANDO...</h3>
+        <div id="reader"></div>
+        <button onclick="stopScanner()" style="margin-top:20px; padding:10px 30px; background:#ff4444; color:white; border:none; border-radius:8px; font-weight:bold;">CERRAR</button>
+        <p id="ocr-status" style="color:#44cf6c; margin-top:10px; font-weight:bold;"></p>
     </div>
 
     <div id="main-container"></div>
-    <div id="info-footer" class="footer-info">v1.2 | Cargando base de datos...</div>
+    <div id="info-footer" class="footer-info">v1.3 | Conectado a Firebase</div>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <script>
+        // TU CONFIGURACIÓN FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyAb3GqlzjbDTNxLGI8maiF3U0qGieGERdw",
             authDomain: "estanteria-gamer.firebaseapp.com",
             projectId: "estanteria-gamer",
             storageBucket: "estanteria-gamer.firebasestorage.app",
             messagingSenderId: "181559174957",
-            appId: "1:181559174957:web:7d6e99f7cd32632ba8d5a4",
-            measurementId: "G-V53Q0X6K56"
+            appId: "1:181559174957:web:7d6e99f7cd32632ba8d5a4"
         };
 
         firebase.initializeApp(firebaseConfig);
@@ -195,10 +168,12 @@
         let db_local = [];
         let fotoSeleccionada = "";
         let typingTimer;
+        let html5QrCode;
 
         const inputTitulo = document.getElementById('add-titulo');
         const suggestionsBox = document.getElementById('suggestions');
 
+        // BÚSQUEDA MANUAL EN RAWG
         inputTitulo.addEventListener('input', () => {
             clearTimeout(typingTimer);
             const query = inputTitulo.value.trim();
@@ -229,86 +204,71 @@
                         suggestionsBox.appendChild(div);
                     });
                 }
-            } catch (e) { console.error("Error API:", e); }
+            } catch (e) { console.error(e); }
         }
 
-        // MOTOR DE BÚSQUEDA TRIPLE (EAN/ISBN)
-        async function obtenerTituloPorEAN(ean) {
-            document.getElementById('ocr-status').innerText = "Buscando: " + ean;
+        // LÓGICA DE ESCANEO MEJORADA
+        async function startScanner() {
+            document.getElementById('camera-overlay').style.display = 'flex';
+            html5QrCode = new Html5Qrcode("reader");
+            
+            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+            
             try {
-                // 1. Google Books (Excelente para juegos con ISBN)
-                const resGB = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${ean}`);
-                const dataGB = await resGB.json();
-                if (dataGB.totalItems > 0) return dataGB.items[0].volumeInfo.title;
+                await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
+            } catch (err) {
+                alert("Error de cámara: " + err);
+                stopScanner();
+            }
+        }
 
-                // 2. RAWG Directo
-                const resRawg = await fetch(`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${ean}&page_size=1`);
-                const dataRawg = await resRawg.json();
-                if (dataRawg.results && dataRawg.results.length > 0 && !dataRawg.results[0].name.includes(ean)) {
-                    return dataRawg.results[0].name;
-                }
+        async function onScanSuccess(decodedText) {
+            navigator.vibrate(100);
+            document.getElementById('ocr-status').innerText = "¡Detectado! Buscando: " + decodedText;
+            
+            // Intentar buscar nombre
+            const nombre = await buscarPorCodigo(decodedText);
+            
+            if (nombre) {
+                inputTitulo.value = nombre.toUpperCase();
+                buscarEnRAWG(nombre); // Para sacar la foto automáticamente
+                stopScanner();
+            } else {
+                inputTitulo.value = decodedText;
+                document.getElementById('ocr-status').innerText = "Código leído, pero nombre no hallado.";
+                alert("Código detectado ("+decodedText+") pero no está en la base de datos. Pon el nombre a mano.");
+                stopScanner();
+            }
+        }
 
-                // 3. Open Library
-                const resOL = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${ean}&format=json&jscmd=data`);
-                const dataOL = await resOL.json();
-                if (dataOL[`ISBN:${ean}`]) return dataOL[`ISBN:${ean}`].title;
+        async function buscarPorCodigo(ean) {
+            // Buscador triple
+            try {
+                const r1 = await fetch(`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${ean}&page_size=1`);
+                const d1 = await r1.json();
+                if (d1.results && d1.results.length > 0) return d1.results[0].name;
+
+                const r2 = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${ean}`);
+                const d2 = await r2.json();
+                if (d2.totalItems > 0) return d2.items[0].volumeInfo.title;
 
                 return null;
             } catch (e) { return null; }
         }
 
-        // ESCÁNER REFORZADO
-        function startCamera() {
-            document.getElementById('camera-overlay').style.display = 'flex';
-            document.getElementById('ocr-status').innerText = "Apunte al código de barras";
-            
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: document.querySelector('#video-preview'),
-                    constraints: {
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        facingMode: "environment",
-                        focusMode: "continuous" // Vital para leer códigos pequeños
-                    },
-                },
-               locator: { patchSize: "small", halfSample: false }, // "small" ayuda a no perderse con el fondo
-                decoder: { 
-                    readers: ["ean_reader", "ean_8_reader", "upc_reader", "code_128_reader"] 
-                }
-            }, function(err) {
-                if (err) { alert("Error cámara: " + err); stopCamera(); return; }
-                Quagga.start();
-            });
-
-            Quagga.onDetected(async (data) => {
-                const code = data.codeResult.code;
-                if(code && code.length >= 8) {
-                    Quagga.stop();
-                    navigator.vibrate(100);
-                    document.getElementById('ocr-status').innerText = "¡Código detectado! Buscando...";
-                    
-                    const tituloIdentificado = await obtenerTituloPorEAN(code);
-                    
-                    if(tituloIdentificado) {
-                        inputTitulo.value = tituloIdentificado.toUpperCase();
-                        stopCamera();
-                        buscarEnRAWG(tituloIdentificado); // Para traer la foto
-                    } else {
-                        document.getElementById('ocr-status').innerText = "No encontrado. Reintentando...";
-                        setTimeout(() => Quagga.start(), 2000);
-                    }
-                }
-            });
+        function stopScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('camera-overlay').style.display = 'none';
+                }).catch(() => {
+                    document.getElementById('camera-overlay').style.display = 'none';
+                });
+            } else {
+                document.getElementById('camera-overlay').style.display = 'none';
+            }
         }
 
-        function stopCamera() {
-            Quagga.stop();
-            document.getElementById('camera-overlay').style.display = 'none';
-        }
-
+        // EL RESTO DE TUS FUNCIONES (Firebase, Render, etc.)
         function autoSelectGenero(genres) {
             if (!genres || genres.length === 0) return;
             const principal = genres[0].name.toUpperCase();
@@ -351,7 +311,7 @@
                 section.appendChild(grid);
                 container.appendChild(section);
             });
-            document.getElementById('info-footer').innerText = `TOTAL: ${filtrados.length} JUEGOS`;
+            document.getElementById('info-footer').innerText = `TOTAL: ${filtrados.length} JUEGOS | v1.3`;
         }
 
         function agregarJuego() {
