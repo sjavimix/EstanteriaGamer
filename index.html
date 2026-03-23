@@ -6,7 +6,7 @@
     <title>GamerShelf Pro v1.1</title>
     <meta name="theme-color" content="#107c10">
     <link rel="manifest" href="manifest.json">
-	<link rel="icon" href="data:,">
+    <link rel="icon" href="data:,">
 
     <script>
       if ('serviceWorker' in navigator) {
@@ -23,7 +23,7 @@
         #login-screen { text-align: center; margin-top: 100px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
         .btn-google { background: white; color: #444; padding: 12px 24px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 1rem; }
         
-        #app-content { display: none; } /* Oculto hasta que se loguee */
+        #app-content { display: none; } 
 
         .tools-container { 
             max-width: 900px; margin: 0 auto 40px; padding: 25px; 
@@ -73,7 +73,7 @@
         <img src="imagenes/titulo.png" alt="GamerShelf Pro" style="max-width: 80%;">
         <p>Tu colección de videojuegos en la nube.</p>
         <button class="btn-google" id="btn-login" onclick="login()">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="20">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20">
             Entrar con Google
         </button>
     </div>
@@ -152,9 +152,9 @@
 
     <div id="info-footer" class="footer-info">Cargando...</div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
 
     <script>
         const firebaseConfig = {
@@ -179,9 +179,8 @@
 
         // --- GESTIÓN DE USUARIO Y LOGIN ---
 
-        // Función para manejar el resultado del redireccionamiento (CRUCIAL PARA ANDROID)
         auth.getRedirectResult().then((result) => {
-            if (result.user) {
+            if (result && result.user) {
                 console.log("Login exitoso tras redirección");
             }
         }).catch((error) => {
@@ -207,7 +206,6 @@
             btn.innerText = "Cargando...";
             btn.disabled = true;
             const provider = new firebase.auth.GoogleAuthProvider();
-            // Usamos Redirect porque Popup falla en aplicaciones móviles
             auth.signInWithRedirect(provider);
         }
 
@@ -265,7 +263,6 @@
 
         function refreshData() {
             if(!currentUser) return;
-            // Filtramos por userId para que cada uno vea solo lo suyo
             db.collection("juegos")
               .where("userId", "==", currentUser.uid)
               .onSnapshot(snap => {
@@ -320,7 +317,7 @@
             });
 
             if (!bloqueoFooter && currentUser) {
-                document.getElementById('info-footer').innerText = `TOTAL: ${filtrados.length} JUEGOS | Hola, ${currentUser.displayName.split(' ')[0]}`;
+                document.getElementById('info-footer').innerText = `TOTAL: ${filtrados.length} JUEGOS | Hola, ${currentUser.displayName ? currentUser.displayName.split(' ')[0] : 'Gamer'}`;
                 document.getElementById('info-footer').style.background = "#107c10";
             }
         }
