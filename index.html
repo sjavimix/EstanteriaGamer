@@ -64,7 +64,7 @@
         .game-title { flex-grow: 1; }
         .btn-del { color: #555; background: none; border: none; cursor: pointer; font-size: 1rem; }
 
-        .footer-info { position: fixed; bottom: 0; left: 0; width: 100%; background: #107c10; color: white; text-align: center; padding: 5px 0; font-weight: bold; z-index: 100; transition: background 0.5s; font-size: 0.9rem; }
+        .footer-info { position: fixed; bottom: 0; left: 0; width: 100%; background: #107c10; color: white; text-align: center; padding: 5px 0; font-weight: bold; z-index: 100; transition: all 0.5s; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -95,39 +95,39 @@
                     </div>
                     
                     <select id="add-consola" class="select-add">
-						<optgroup label="Sony">
-							<option value="PS1">PS1</option>
-							<option value="PS2">PS2</option>
-							<option value="PS3">PS3</option>
-							<option value="PS4">PS4</option>
-							<option value="PS5">PS5</option>
-						</optgroup>
-						<optgroup label="Microsoft">
-							<option value="XBOX">Xbox Clásica</option>
-							<option value="X360">Xbox 360</option>
-							<option value="XONE/SERIES" selected>Xbox One/Series</option>
-						</optgroup>
-						<optgroup label="Nintendo">
-							<option value="GB">Game Boy</option>
-							<option value="NES">NES</option>
-							<option value="SNES">Super Nintendo</option>
-							<option value="N64">Nintendo 64</option>
-							<option value="GCN">GameCube</option>
-							<option value="WII">Wii</option>
-							<option value="WIIU">Wii U</option>
-							<option value="SWITCH">Switch</option>
-						</optgroup>
-						<optgroup label="Sega">
-							<option value="MS II">Master System II</option>
-							<option value="MD">Mega Drive</option>
-							<option value="GG">Game Gear</option>
-							<option value="SATURN">Sega Saturn</option>
-							<option value="DC">Dreamcast</option>
-						</optgroup>
-						<optgroup label="Otros">
-							<option value="PCE">PC Engine</option>
-						</optgroup>
-					</select>
+                        <optgroup label="Sony">
+                            <option value="PS1">PS1</option>
+                            <option value="PS2">PS2</option>
+                            <option value="PS3">PS3</option>
+                            <option value="PS4">PS4</option>
+                            <option value="PS5">PS5</option>
+                        </optgroup>
+                        <optgroup label="Microsoft">
+                            <option value="XBOX">Xbox Clásica</option>
+                            <option value="X360">Xbox 360</option>
+                            <option value="XONE/SERIES" selected>Xbox One/Series</option>
+                        </optgroup>
+                        <optgroup label="Nintendo">
+                            <option value="GB">Game Boy</option>
+                            <option value="NES">NES</option>
+                            <option value="SNES">Super Nintendo</option>
+                            <option value="N64">Nintendo 64</option>
+                            <option value="GCN">GameCube</option>
+                            <option value="WII">Wii</option>
+                            <option value="WIIU">Wii U</option>
+                            <option value="SWITCH">Switch</option>
+                        </optgroup>
+                        <optgroup label="Sega">
+                            <option value="MS II">Master System II</option>
+                            <option value="MD">Mega Drive</option>
+                            <option value="GG">Game Gear</option>
+                            <option value="SATURN">Sega Saturn</option>
+                            <option value="DC">Dreamcast</option>
+                        </optgroup>
+                        <optgroup label="Otros">
+                            <option value="PCE">PC Engine</option>
+                        </optgroup>
+                    </select>
 
                     <button onclick="agregarJuego()" class="btn-add" style="margin-top: 14px;">AÑADIR</button>
                 </div>
@@ -164,10 +164,10 @@
         let typingTimer;
         let bloqueoFooter = false;
         let currentUser = null;
+        let mostrandoSaludo = false; // Variable para controlar el saludo inicial
 
         // --- GESTIÓN DE USUARIO Y LOGIN ---
 
-        // 1. Manejar el resultado de la redirección al cargar la página
         auth.getRedirectResult().then((result) => {
             if (result.user) {
                 console.log("Sesión iniciada tras redirección:", result.user.email);
@@ -178,16 +178,28 @@
             resetLoginButton();
         });
 
-        // 2. Observador del estado de autenticación
         auth.onAuthStateChanged(user => {
             if (user) {
-                console.log("Usuario detectado:", user.uid);
                 currentUser = user;
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
+                
+                // Efecto de saludo temporal
+                const nombre = user.displayName ? user.displayName.split(' ')[0] : 'Gamer';
+                const footer = document.getElementById('info-footer');
+                
+                mostrandoSaludo = true;
+                footer.innerText = `¡HOLA, ${nombre.toUpperCase()}! BIENVENIDO`;
+                footer.style.background = "#3498db";
+
+                setTimeout(() => {
+                    mostrandoSaludo = false;
+                    footer.style.background = "#107c10";
+                    render(document.getElementById('buscador').value);
+                }, 5000);
+
                 refreshData();
             } else {
-                console.log("No hay usuario activo");
                 currentUser = null;
                 document.getElementById('login-screen').style.display = 'flex';
                 document.getElementById('app-content').style.display = 'none';
@@ -196,36 +208,23 @@
         });
 
         function login() {
-		const btn = document.getElementById('btn-login');
-		btn.innerText = "Abriendo Google...";
-		btn.disabled = true;
-
-		const provider = new firebase.auth.GoogleAuthProvider();
-
-		// Usar Popup suele ser más fiable que Redirect en estos casos
-		auth.signInWithPopup(provider)
-			.then((result) => {
-				console.log("¡Acceso concedido!", result.user.email);
-			})
-			.catch((error) => {
-				console.error("Error detallado:", error.code, error.message);
-				alert("Error de Google: " + error.message);
-				resetLoginButton();
-        });
-		}
+            const btn = document.getElementById('btn-login');
+            btn.innerText = "Abriendo Google...";
+            btn.disabled = true;
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).catch((error) => {
+                alert("Error de Google: " + error.message);
+                resetLoginButton();
+            });
+        }
 
         function resetLoginButton() {
             const btn = document.getElementById('btn-login');
-            if(btn) {
-                btn.innerText = "Entrar con Google";
-                btn.disabled = false;
-            }
+            if(btn) { btn.innerText = "Entrar con Google"; btn.disabled = false; }
         }
 
         function logout() {
-            auth.signOut().then(() => {
-                location.reload(); // Recargar para limpiar todo el estado
-            });
+            auth.signOut().then(() => { location.reload(); });
         }
 
         // --- LÓGICA DE JUEGOS ---
@@ -257,23 +256,11 @@
                             inputTitulo.value = game.name.toUpperCase();
                             fotoSeleccionada = game.background_image;
                             suggestionsBox.style.display = "none";
-                            autoSelectGenero(game.genres);
                         };
                         suggestionsBox.appendChild(div);
                     });
                 }
             } catch (e) { console.error(e); }
-        }
-
-        function autoSelectGenero(genres) {
-            if (!genres || genres.length === 0) return;
-            const principal = genres[0].name.toUpperCase();
-            const select = document.getElementById('add-genero');
-            for (let opt of select.options) {
-                if (principal.includes(opt.value) || opt.value.includes(principal)) {
-                    select.value = opt.value; break;
-                }
-            }
         }
 
         function refreshData() {
@@ -284,8 +271,6 @@
                 db_local = [];
                 snap.forEach(doc => db_local.push({ id: doc.id, ...doc.data() }));
                 render(document.getElementById('buscador').value);
-            }, (error) => {
-                console.error("Error Firestore:", error);
             });
         }
 
@@ -303,27 +288,21 @@
             Object.keys(porConsola).sort().forEach(c => {
                 const section = document.createElement('div');
                 section.className = 'console-section';
-                section.innerHTML = `<div class="console-header"><img src="imagenes/${c}.png" onerror="this.style.display='none'"><h2>${c.toUpperCase()} (${porConsola[c].length})</h2></div>`;
+                // Ahora c ya viene con el nombre corto desde el select
+                section.innerHTML = `<div class="console-header"><img src="imagenes/${c}.png" onerror="this.style.display='none'"><h2>${c} (${porConsola[c].length})</h2></div>`;
                 
                 const grid = document.createElement('div');
                 grid.className = 'genres-grid';
                 
-                const porGen = porConsola[c].reduce((acc, j) => { 
-                    acc[j.genero] = acc[j.genero] || []; 
-                    acc[j.genero].push(j); 
-                    return acc; 
-                }, {});
-
-                Object.keys(porGen).sort().forEach(g => {
+                porConsola[c].forEach(j => {
                     const box = document.createElement('div');
-                    box.className = 'genre-box';
-                    box.innerHTML = `<h3>${g} <span>(${porGen[g].length})</span></h3>
-                        <ul>${porGen[g].map(j => `
+                    box.className = 'genre-box'; // Mantenemos tu estructura visual
+                    box.innerHTML = `<ul>
                             <li>
                                 <img src="${j.foto || ''}" class="game-thumb">
                                 <span class="game-title">${j.titulo}</span>
                                 <button class="btn-del" onclick="borrarJuego('${j.id}')">✕</button>
-                            </li>`).join('')}
+                            </li>
                         </ul>`;
                     grid.appendChild(box);
                 });
@@ -331,28 +310,18 @@
                 container.appendChild(section);
             });
 
-            if (!bloqueoFooter && currentUser) {
-                const nombre = currentUser.displayName ? currentUser.displayName.split(' ')[0] : 'Gamer';
-                document.getElementById('info-footer').innerText = `TOTAL: ${filtrados.length} JUEGOS | Hola, ${nombre}`;
-                document.getElementById('info-footer').style.background = "#107c10";
+            if (!bloqueoFooter && currentUser && !mostrandoSaludo) {
+                document.getElementById('info-footer').innerText = `TOTAL: ${filtrados.length} JUEGOS`;
             }
         }
 
         function agregarJuego() {
             const t = inputTitulo.value.trim();
-            const g = document.getElementById('add-genero').value;
             const c = document.getElementById('add-consola').value;
             if(!t || !currentUser) return;
 
-            const yaExiste = db_local.find(j => j.titulo.toUpperCase() === t.toUpperCase() && j.consola === c);
-            if (yaExiste) {
-                mostrarFeedback(`⚠️ YA EXISTE EN ${c.toUpperCase()}`, "#f39c12");
-                return;
-            }
-
             db.collection("juegos").add({
                 titulo: t, 
-                genero: g, 
                 consola: c, 
                 foto: fotoSeleccionada, 
                 fecha: new Date(),
@@ -362,9 +331,6 @@
                 inputTitulo.value = "";
                 fotoSeleccionada = "";
                 suggestionsBox.style.display = "none";
-            }).catch(e => {
-                mostrarFeedback("❌ ERROR AL GUARDAR", "red");
-                console.error(e);
             });
         }
 
