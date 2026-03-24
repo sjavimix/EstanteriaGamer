@@ -88,7 +88,7 @@
         }
         .skin-option:active { transform: scale(0.95); }
         .skin-option img { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; border: 2px solid transparent; transition: filter 0.3s; }
-        .skin-option p { font-size: 0.6rem; margin: 5px 0 0; font-weight: bold; color: #888; }
+        .skin-option p { font-size: 0.6rem; margin: 5px 0 0; font-weight: bold; color: #888; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .btn-skin-toggle {
             background: #333; color: #ccc; border: 1px solid #444;
             padding: 5px 15px; border-radius: 20px; cursor: pointer;
@@ -120,7 +120,6 @@
         #login-screen .img-pocion { top: calc(100% - 52px); right: 10px; }
         #login-screen .img-escudo { top: calc(100% - 46px); left: 5px; }
 
-        /* AJUSTE: Ahora siempre al lado del botón superior */
         .tools-container .deco-img { top: 25px; } 
         .tools-container .img-escudo { left: 20px; }
         .tools-container .img-pocion { right: 20px; margin-top: -6px; }
@@ -134,6 +133,18 @@
         .suggestions { position: absolute; top: 100%; left: 0; right: 0; background: #252525; border: 2px solid var(--main-color); border-radius: 0 0 8px 8px; z-index: 99999; max-height: 250px; overflow-y: auto; display: none; }
         .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 10px; }
         .suggestion-item img { width: 40px; height: 55px; object-fit: cover; border-radius: 3px; }
+
+        /* Estilos para el contenedor de añadir con iconos */
+        .add-controls-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .add-controls-wrapper .deco-img {
+            position: static; /* Anulamos posicionamiento absoluto */
+            filter: drop-shadow(0px 0px 4px rgba(0,0,0,0.3)); /* Sombra más suave */
+        }
 
         .btn-add { cursor:pointer; background: var(--main-color); border:none; padding:10px 20px; border-radius:8px; font-weight:bold; color: #000; transition: var(--transition-speed); }
         .btn-logout { background: none; border: 1px solid #444; color: #888; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.7rem; margin-top: 10px; }
@@ -185,22 +196,24 @@
                 <div id="skin-selector">
                     <div class="skin-option" onclick="aplicarSkin('original', '#107c10', 'skin1.png'); toggleSkins();">
                         <div class="skin-img-wrapper">
-                            <img src="imagenes/skin1.png">
+                            <img id="img-original" src="imagenes/skin1.png">
+                            <span id="lock-original" class="lock-overlay">🔒</span>
                         </div>
-                        <p id="label-original">XBOX</p> </div>
+                        <p id="label-original"><span>XBOX</span> <span id="check-original" class="check" style="display:none;">✅</span></p>
+                    </div>
                     <div class="skin-option" onclick="simularAnuncio('mario', '#e74c3c', 'skin2.png')">
                         <div class="skin-img-wrapper">
                             <img id="img-mario" src="imagenes/skin2.png">
                             <span id="lock-mario" class="lock-overlay">🔒</span>
                         </div>
-                        <p id="label-mario">MARIO 📺</p>
+                        <p id="label-mario"><span>MARIO</span> <span id="check-mario" class="check" style="display:none;">✅</span> 📺</p>
                     </div>
                     <div class="skin-option" onclick="simularAnuncio('cloud', '#3498db', 'skin3.png')">
                         <div class="skin-img-wrapper">
                             <img id="img-cloud" src="imagenes/skin3.png">
                             <span id="lock-cloud" class="lock-overlay">🔒</span>
                         </div>
-                        <p id="label-cloud">CLOUD 📺</p>
+                        <p id="label-cloud"><span>CLOUD</span> <span id="check-cloud" class="check" style="display:none;">✅</span> 📺</p>
                     </div>
                 </div>
 
@@ -264,7 +277,11 @@
                         </optgroup>
                     </select>
 
-                    <button onclick="agregarJuego()" class="btn-add" style="margin-top: 14px;">AÑADIR</button>
+                    <div class="add-controls-wrapper">
+                        <img src="imagenes/pocion.png" class="deco-img img-pocion" alt="Poción" style="width: 25px;">
+                        <button onclick="agregarJuego()" class="btn-add">AÑADIR</button>
+                        <img src="imagenes/escudo.png" class="deco-img img-escudo" alt="Escudo" style="width: 25px;">
+                    </div>
                 </div>
                 <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
             </div>
@@ -315,6 +332,7 @@
         function actualizarLabelsSkins() {
             Object.keys(requisitosSkins).forEach(id => {
                 const label = document.getElementById(`label-${id}`);
+                const check = document.getElementById(`check-${id}`);
                 const lock = document.getElementById(`lock-${id}`);
                 const img = document.getElementById(`img-${id}`);
 
@@ -323,14 +341,21 @@
                     const objetivo = requisitosSkins[id];
                     
                     if (vistos >= objetivo) {
-                        label.innerText = id.toUpperCase() + (id === 'original' ? "" : " ✅");
                         label.style.color = "var(--main-color)";
+                        if(check) check.style.display = "inline";
                         if(lock) lock.style.display = "none";
                         if(img) img.style.filter = "none";
+                        const baseText = label.querySelector('span:first-child').innerText;
+                        label.querySelector('span:first-child').innerText = baseText.replace(/ \(\d+\/\d+\)/, '');
                     } else {
-                        label.innerText = `${id.toUpperCase()} (${vistos}/${objetivo}) 📺`;
+                        label.style.color = "#888";
+                        if(check) check.style.display = "none";
                         if(lock) lock.style.display = "block";
                         if(img) img.style.filter = "grayscale(100%) brightness(50%)";
+                        const baseText = label.querySelector('span:first-child').innerText;
+                        if (!baseText.includes('(')) {
+                            label.querySelector('span:first-child').innerText = `${baseText} (${vistos}/${objetivo})`;
+                        }
                     }
                 }
             });
@@ -379,6 +404,7 @@
             localStorage.setItem('gamerShelf_skin_color', color);
             localStorage.setItem('gamerShelf_skin_img', img);
             render(document.getElementById('buscador').value);
+            actualizarLabelsSkins(); // Actualizamos colores de etiquetas tras cambio
         }
 
         function restaurarSkin() {
@@ -389,6 +415,7 @@
                 document.getElementById('meta-theme').content = savedColor;
                 const avatar = document.getElementById('avatar-principal');
                 if(avatar) avatar.src = `imagenes/${savedImg}`;
+                actualizarLabelsSkins(); // Aseguramos colores correctos al restaurar
             }
         }
 
