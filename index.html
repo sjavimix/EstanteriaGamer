@@ -120,7 +120,8 @@
         #login-screen .img-pocion { top: calc(100% - 52px); right: 10px; }
         #login-screen .img-escudo { top: calc(100% - 46px); left: 5px; }
 
-        .tools-container .deco-img { top: 430px; }
+        /* AJUSTE: Ahora siempre al lado del botón superior */
+        .tools-container .deco-img { top: 25px; } 
         .tools-container .img-escudo { left: 20px; }
         .tools-container .img-pocion { right: 20px; margin-top: -6px; }
 
@@ -186,8 +187,7 @@
                         <div class="skin-img-wrapper">
                             <img src="imagenes/skin1.png">
                         </div>
-                        <p>XBOX</p>
-                    </div>
+                        <p id="label-original">XBOX</p> </div>
                     <div class="skin-option" onclick="simularAnuncio('mario', '#e74c3c', 'skin2.png')">
                         <div class="skin-img-wrapper">
                             <img id="img-mario" src="imagenes/skin2.png">
@@ -323,7 +323,7 @@
                     const objetivo = requisitosSkins[id];
                     
                     if (vistos >= objetivo) {
-                        label.innerText = id.toUpperCase() + " ✅";
+                        label.innerText = id.toUpperCase() + (id === 'original' ? "" : " ✅");
                         label.style.color = "var(--main-color)";
                         if(lock) lock.style.display = "none";
                         if(img) img.style.filter = "none";
