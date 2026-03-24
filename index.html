@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GamerShelf Pro v1.1.4</title>
+    <title>GamerShelf Pro v1.1.5</title>
     <meta name="theme-color" content="#107c10">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="data:,">
@@ -15,7 +15,7 @@
             color: #e0e0e0; 
             margin: 0; 
             padding: 20px; 
-            padding-bottom: 100px; /* Espacio para el footer fijo */
+            padding-bottom: 100px; 
         }
         header { max-width: 900px; margin: 0 auto 30px; text-align: center; }
         .header-logo { max-width: 100%; height: auto; margin-top: 10px; }
@@ -31,7 +31,6 @@
             position: relative; display: flex; flex-direction: column; gap: 15px;
         }
 
-        /* --- DECORACIÓN ORIGINAL --- */
         .deco-img { position: absolute; top: 360px; width: 38px; height: auto; filter: drop-shadow(0px 0px 8px rgba(0,0,0,0.5)); z-index: 1; }
         .img-escudo { left: 20px; }
         .img-pocion { right: 20px; margin-top: -6px; }
@@ -46,22 +45,34 @@
         .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 10px; }
         .suggestion-item img { width: 40px; height: 55px; object-fit: cover; border-radius: 3px; }
 
-        .btn-add { cursor:pointer; background:#44cf6c; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; color: #000; }
+        .btn-add { cursor:pointer; background:#44cf6c; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; color: #000; transition: 0.3s; }
         .btn-logout { background: none; border: 1px solid #444; color: #888; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.7rem; margin-top: 10px; }
 
-        /* --- TÍTULOS DE CONSOLA REPETANDO LOGO --- */
+        /* --- CORRECCIÓN CABECERA CONSOLA --- */
         .console-section { background: #161616; border-radius: 15px; margin-bottom: 30px; padding: 20px; border: 1px solid #222; }
-        .console-header { display: flex; align-items: center; gap: 15px; border-bottom: 2px solid #44cf6c; padding-bottom: 10px; margin-bottom: 20px; }
+        
+        .console-header { 
+            display: block; /* Volvemos al bloque original para no desplazar el contenido inferior */
+            border-bottom: 2px solid #44cf6c; 
+            padding-bottom: 10px; 
+            margin-bottom: 20px;
+        }
+
+        .header-content { display: flex; align-items: center; gap: 15px; }
         .console-header img { height: 40px; width: auto; background: white; padding: 3px; border-radius: 5px; flex-shrink: 0; }
-        .console-header h2 { margin: 0; flex: 1; min-width: 0; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.2; font-size: 1.4rem; }
+        .console-header h2 { margin: 0; flex: 1; min-width: 0; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.2; font-size: 1.4rem; text-align: left; }
 
-        .genres-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        /* --- CONTENIDO DE JUEGOS A LA IZQUIERDA --- */
+        .genres-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; text-align: left; }
         .genre-box { background: #1e1e1e; padding: 12px; border-radius: 8px; }
-        li { padding: 8px; border-bottom: 1px solid #2a2a2a; font-size: 0.85rem; display: flex; align-items: center; gap: 12px; }
-        .game-thumb { width: 35px; height: 48px; object-fit: cover; border-radius: 4px; }
-        .btn-del { color: #555; background: none; border: none; cursor: pointer; }
+        .genre-box h3 { text-align: left; margin-top: 0; }
+        
+        ul { list-style: none; padding: 0; margin: 0; }
+        li { padding: 8px; border-bottom: 1px solid #2a2a2a; font-size: 0.85rem; display: flex; align-items: center; gap: 12px; justify-content: flex-start; }
+        .game-thumb { width: 35px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid #444; flex-shrink: 0; }
+        .game-title { flex-grow: 1; text-align: left; }
+        .btn-del { color: #555; background: none; border: none; cursor: pointer; font-size: 1rem; }
 
-        /* --- FOOTER SIEMPRE VISIBLE --- */
         .footer-info { 
             position: fixed; bottom: 0; left: 0; width: 100%; 
             background: #107c10; color: white; text-align: center; 
@@ -74,7 +85,7 @@
 <body>
 
     <div id="login-screen">
-        <img src="imagenes/titulo.png" alt="Logo" style="max-width: 80%;">
+        <img src="imagenes/titulo.png" alt="GamerShelf Pro" style="max-width: 80%;">
         <button class="btn-google" id="btn-login" onclick="login()">Entrar con Google</button>
     </div>
 
@@ -111,6 +122,7 @@
                 <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
             </div>
         </header>
+
         <div id="main-container"></div>
     </div>
 
@@ -140,19 +152,17 @@
         let typingTimer;
         let bloqueoFooter = false;
         let currentUser = null;
-        let bienvenidaActiva = false; // Para que el saludo no se quite al instante
+        let bienvenidaActiva = false;
 
         auth.onAuthStateChanged(user => {
-            const footer = document.getElementById('info-footer');
             if (user) {
                 currentUser = user;
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
                 
-                // Lógica de Bienvenida
                 bienvenidaActiva = true;
                 const nombre = user.displayName ? user.displayName.split(' ')[0].toUpperCase() : 'GAMER';
-                footer.innerText = `¡HOLA, ${nombre}! PREPARANDO TU ESTANTERÍA...`;
+                document.getElementById('info-footer').innerText = `¡HOLA, ${nombre}! PREPARANDO TU ESTANTERÍA...`;
                 
                 setTimeout(() => { 
                     bienvenidaActiva = false; 
@@ -164,7 +174,6 @@
                 currentUser = null;
                 document.getElementById('login-screen').style.display = 'flex';
                 document.getElementById('app-content').style.display = 'none';
-                footer.innerText = "ESPERANDO INICIO DE SESIÓN...";
             }
         });
 
@@ -184,28 +193,39 @@
             const container = document.getElementById('main-container');
             container.innerHTML = "";
             const filtrados = db_local.filter(j => j.titulo.toLowerCase().includes(filtro.toLowerCase()));
-            
-            // Renderizado de grupos...
             const porConsola = filtrados.reduce((acc, j) => { acc[j.consola] = acc[j.consola] || []; acc[j.consola].push(j); return acc; }, {});
 
             Object.keys(porConsola).sort().forEach(c => {
                 const section = document.createElement('div');
                 section.className = 'console-section';
-                section.innerHTML = `<div class="console-header"><img src="imagenes/${c}.png" onerror="this.style.display='none'"><h2>${c.toUpperCase()} (${porConsola[c].length})</h2></div>`;
-                const grid = document.createElement('div');
-                grid.className = 'genres-grid';
+                section.innerHTML = `
+                    <div class="console-header">
+                        <div class="header-content">
+                            <img src="imagenes/${c}.png" onerror="this.style.display='none'">
+                            <h2>${c.toUpperCase()} (${porConsola[c].length})</h2>
+                        </div>
+                    </div>
+                    <div class="genres-grid"></div>`;
+                
+                const grid = section.querySelector('.genres-grid');
                 const porGen = porConsola[c].reduce((acc, j) => { acc[j.genero] = acc[j.genero] || []; acc[j.genero].push(j); return acc; }, {});
+
                 Object.keys(porGen).sort().forEach(g => {
                     const box = document.createElement('div');
                     box.className = 'genre-box';
-                    box.innerHTML = `<h3>${g} (${porGen[g].length})</h3><ul>${porGen[g].map(j => `<li><img src="${j.foto}" class="game-thumb"><span>${j.titulo}</span><button class="btn-del" onclick="borrarJuego('${j.id}')">✕</button></li>`).join('')}</ul>`;
+                    box.innerHTML = `<h3>${g} (${porGen[g].length})</h3>
+                        <ul>${porGen[g].map(j => `
+                            <li>
+                                <img src="${j.foto || ''}" class="game-thumb">
+                                <span class="game-title">${j.titulo}</span>
+                                <button class="btn-del" onclick="borrarJuego('${j.id}')">✕</button>
+                            </li>`).join('')}
+                        </ul>`;
                     grid.appendChild(box);
                 });
-                section.appendChild(grid);
                 container.appendChild(section);
             });
 
-            // Lógica de Footer Total
             if (!bloqueoFooter && currentUser && !bienvenidaActiva) {
                 document.getElementById('info-footer').innerText = `TOTAL: ${filtrados.length} JUEGOS EN TU COLECCIÓN`;
                 document.getElementById('info-footer').style.background = "#107c10";
@@ -226,6 +246,8 @@
             db.collection("juegos").add({ titulo: t, genero: g, consola: c, foto: fotoSeleccionada, userId: currentUser.uid, fecha: new Date() }).then(() => {
                 mostrarFeedback(`✅ AÑADIDO: ${t}`, "#2ecc71");
                 document.getElementById('add-titulo').value = "";
+                fotoSeleccionada = "";
+                document.getElementById('suggestions').style.display = "none";
             });
         }
 
@@ -239,7 +261,6 @@
             setTimeout(() => { bloqueoFooter = false; render(); }, 3000);
         }
 
-        // --- Búsqueda RAWG ---
         document.getElementById('add-titulo').addEventListener('input', async (e) => {
             const q = e.target.value;
             if(q.length < 3) return;
@@ -255,6 +276,8 @@
                 s.appendChild(d);
             });
         });
+
+        document.getElementById('buscador').addEventListener('input', (e) => render(e.target.value));
     </script>
 </body>
 </html>
