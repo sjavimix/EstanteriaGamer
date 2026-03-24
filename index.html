@@ -299,16 +299,34 @@
         }
 
         function agregarJuego() {
-            const t = inputTitulo.value.trim();
-            const g = document.getElementById('add-genero').value;
-            const c = document.getElementById('add-consola').value;
-            if(!t || !currentUser) return;
-            db.collection("juegos").add({ titulo: t, genero: g, consola: c, foto: fotoSeleccionada, fecha: new Date(), userId: currentUser.uid }).then(() => {
-                mostrarFeedback(`✅ AÑADIDO: ${t.toUpperCase()}`, "#2ecc71");
-                inputTitulo.value = ""; 
-                fotoSeleccionada = "";
-            });
-        }
+			const t = inputTitulo.value.trim().toUpperCase(); // Título en mayúsculas
+			const g = document.getElementById('add-genero').value;
+			const c = document.getElementById('add-consola').value;
+
+			if(!t || !currentUser) return;
+
+			// --- VALIDACIÓN DE DUPLICADOS ---
+			const existe = db_local.some(j => j.titulo.toUpperCase() === t && j.consola === c);
+
+			if (existe) {
+				mostrarFeedback(`⚠️ YA TIENES ${t} EN ${c.toUpperCase()}`, "#e67e22"); // Naranja de aviso
+				return; // Detiene la ejecución, no añade nada
+			}
+
+			// Si no existe, procedemos a añadirlo
+			db.collection("juegos").add({ 
+				titulo: t, 
+				genero: g, 
+				consola: c, 
+				foto: fotoSeleccionada, 
+				fecha: new Date(), 
+				userId: currentUser.uid 
+			}).then(() => {
+				mostrarFeedback(`✅ AÑADIDO: ${t}`, "#2ecc71");
+				inputTitulo.value = ""; 
+				fotoSeleccionada = "";
+			});
+		}
 
         function borrarJuego(id) {
             const juego = db_local.find(j => j.id === id);
