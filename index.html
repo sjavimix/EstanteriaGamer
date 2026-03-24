@@ -3,59 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GamerShelf Pro v1.1</title>
+    <title>GamerShelf Pro v1.1.2</title>
     <meta name="theme-color" content="#107c10">
-    <link rel="manifest" href="manifest.json">
     <link rel="icon" href="data:,">
-
-    <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js');
-      }
-    </script>
     
     <style>
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background: #000000; 
-            color: #e0e0e0; 
-            margin: 0; 
-            padding: 20px; 
-            padding-bottom: 80px; /* Espacio para que el footer no tape el contenido */
-        }
+        body { font-family: 'Segoe UI', sans-serif; background: #000; color: #e0e0e0; margin: 0; padding: 20px; padding-bottom: 100px; }
         header { max-width: 900px; margin: 0 auto 30px; text-align: center; }
-        .header-logo { max-width: 100%; height: auto; margin-top: 10px; }
         
         #login-screen { text-align: center; margin-top: 100px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
-        .btn-google { background: white; color: #444; padding: 12px 24px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 1rem; }
+        .btn-google { background: white; color: #444; padding: 12px 24px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px; }
         
         #app-content { display: none; } 
 
         .tools-container { 
             max-width: 900px; margin: 0 auto 40px; padding: 25px; 
             background: #1a1a1a; border-radius: 15px; border: 1px solid #333; 
-            position: relative; display: flex; flex-direction: column; gap: 15px;
+            display: flex; flex-direction: column; gap: 15px;
         }
 
-        /* --- SOLUCIÓN TÍTULOS CONSOLA --- */
-        .console-section { background: #161616; border-radius: 15px; margin-bottom: 30px; padding: 20px; border: 1px solid #222; overflow: hidden; }
+        /* --- SOLUCIÓN DEFINITIVA PARA EL TÍTULO --- */
+        .console-section { background: #161616; border-radius: 15px; margin-bottom: 30px; padding: 20px; border: 1px solid #222; }
         
         .console-header { 
             display: flex; 
-            align-items: center; 
+            align-items: center; /* Alinea el logo al centro de las líneas de texto */
             gap: 15px; 
             border-bottom: 2px solid #44cf6c; 
             padding-bottom: 10px; 
             margin-bottom: 20px;
-            flex-wrap: wrap; /* Permite que el texto baje si no hay espacio */
-        }
-        
-        .console-header h2 { 
-            margin: 0; 
-            word-break: break-all; /* Corta palabras largas como MASTERSYSTEM2 si es necesario */
-            font-size: clamp(1.1rem, 4vw, 1.5rem); /* Tamaño fluido */
-            flex: 1;
-            min-width: 200px; /* Fuerza el salto si el espacio es muy pequeño */
+            /* Eliminado el wrap para que no baje el bloque entero */
         }
         
         .console-header img { 
@@ -64,101 +41,76 @@
             background: white; 
             padding: 3px; 
             border-radius: 5px; 
-            flex-shrink: 0; 
+            flex-shrink: 0; /* El logo no se encoge */
         }
 
-        /* --- RESTO DE ESTILOS --- */
-        .deco-img { position: absolute; top: 360px; width: 38px; height: auto; filter: drop-shadow(0px 0px 8px rgba(0,0,0,0.5)); z-index: 1; }
-        .img-escudo { left: 20px; }
-        .img-pocion { right: 20px; margin-top: -6px; }
+        .console-header h2 { 
+            margin: 0; 
+            flex: 1; /* Toma todo el espacio restante */
+            min-width: 0; /* Permite que el texto se rompa si no cabe */
+            word-wrap: break-word; 
+            overflow-wrap: break-word; /* Rompe palabras largas como MASTERSYSTEM2 */
+            line-height: 1.2;
+            font-size: 1.4rem;
+        }
 
-        .form-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; position: relative; z-index: 50; }
-        #buscador { padding: 12px 25px; border-radius: 25px; border: 2px solid #333; background: #1e1e1e; color: white; width: 80%; outline: none; margin-bottom: 10px; align-self: center; }
+        /* --- RESTO DE INTERFAZ --- */
+        .form-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        #buscador { padding: 12px 25px; border-radius: 25px; border: 2px solid #333; background: #1e1e1e; color: white; width: 85%; outline: none; margin-bottom: 15px; align-self: center; }
         
         .input-add, .select-add { padding: 10px; border-radius: 8px; border: 1px solid #444; background: #252525; color: white; width: 100%; box-sizing: border-box; }
-        .suggestions { position: absolute; top: 100%; left: 0; right: 0; background: #252525; border: 2px solid #44cf6c; border-radius: 0 0 8px 8px; z-index: 99999; max-height: 250px; overflow-y: auto; display: none; }
-        .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 10px; }
-        .suggestion-item img { width: 40px; height: 55px; object-fit: cover; border-radius: 3px; }
+        
+        .suggestions { position: absolute; top: 100%; left: 0; right: 0; background: #252525; border: 2px solid #44cf6c; border-radius: 0 0 8px 8px; z-index: 999; max-height: 200px; overflow-y: auto; display: none; }
+        .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 10px; }
+        .suggestion-item img { width: 30px; height: 40px; object-fit: cover; }
 
-        .btn-add { cursor:pointer; background:#44cf6c; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; color: #000; }
-        .btn-logout { background: none; border: 1px solid #444; color: #888; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.7rem; margin-top: 10px; }
+        .btn-add { cursor:pointer; background:#44cf6c; border:none; padding:10px 25px; border-radius:8px; font-weight:bold; color: #000; }
+        .btn-logout { background: none; border: 1px solid #444; color: #888; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.7rem; align-self: flex-end; }
 
         .genres-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
         .genre-box { background: #1e1e1e; padding: 12px; border-radius: 8px; }
         ul { list-style: none; padding: 0; }
-        li { padding: 8px; border-bottom: 1px solid #2a2a2a; font-size: 0.85rem; display: flex; align-items: center; gap: 12px; }
-        .game-thumb { width: 35px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid #444; }
+        li { padding: 8px; border-bottom: 1px solid #2a2a2a; font-size: 0.85rem; display: flex; align-items: center; gap: 10px; }
+        .game-thumb { width: 35px; height: 48px; object-fit: cover; border-radius: 4px; }
         .game-title { flex-grow: 1; }
-        .btn-del { color: #555; background: none; border: none; cursor: pointer; font-size: 1rem; }
+        .btn-del { color: #555; background: none; border: none; cursor: pointer; }
 
-        /* --- FOOTER SIEMPRE VISIBLE --- */
         .footer-info { 
-            position: fixed; 
-            bottom: 0; 
-            left: 0; 
-            width: 100%; 
-            background: #107c10; 
-            color: white; 
-            text-align: center; 
-            padding: 10px 0; 
-            font-weight: bold; 
-            z-index: 999; /* Máxima prioridad */
-            transition: background 0.3s ease; 
-            font-size: 0.9rem;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
-            letter-spacing: 1px;
+            position: fixed; bottom: 0; left: 0; width: 100%; 
+            background: #107c10; color: white; text-align: center; 
+            padding: 12px 0; font-weight: bold; z-index: 1000; 
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.5); font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
-        <img src="imagenes/titulo.png" alt="GamerShelf Pro" style="max-width: 80%;">
-        <p>Tu colección de videojuegos en la nube.</p>
-        <button class="btn-google" id="btn-login" onclick="login()">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20">
-            Entrar con Google
-        </button>
+        <img src="imagenes/titulo.png" alt="Logo" style="max-width: 80%;">
+        <button class="btn-google" onclick="login()">Entrar con Google</button>
     </div>
 
     <div id="app-content">
         <header>
-            <img src="imagenes/titulo.png" alt="GamerShelf Pro" class="header-logo">
+            <img src="imagenes/titulo.png" alt="GamerShelf" style="max-width: 200px;">
             <div class="tools-container">
-                <img src="imagenes/skin1.png" alt="Skin" style="height: 152px; margin-top: -40px; margin-bottom: -10px; align-self: center;">
-                <img src="imagenes/escudo.png" class="deco-img img-escudo" alt="Escudo">
-                <img src="imagenes/pocion.png" class="deco-img img-pocion" alt="Poción">
-
-                <input type="text" id="buscador" placeholder="Buscar en mi colección...">
-                
+                <input type="text" id="buscador" placeholder="Buscar en mi estantería...">
                 <div class="form-row">
                     <div style="position: relative; flex: 2; min-width: 200px;">
-                        <input type="text" id="add-titulo" class="input-add" placeholder="Título del juego...">
+                        <input type="text" id="add-titulo" class="input-add" placeholder="Nombre del juego...">
                         <div id="suggestions" class="suggestions"></div>
                     </div>
-                    
-                    <select id="add-genero" class="select-add" style="flex: 1; min-width: 120px;">
-                        <option value="RPG">RPG</option>
-                        <option value="PLATAFORMAS">PLATAFORMAS</option>
-                        <option value="LUCHA">LUCHA</option>
-                        <option value="TERROR">TERROR</option>
-                        <option value="SHOOTER">SHOOTER</option>
-                        <option value="AVENTURA">AVENTURA</option>
-                        <option value="CONDUCCION">CONDUCCIÓN</option>
-                        <option value="DEPORTES">DEPORTES</option>
-                        <option value="METROIDVANIA">METROIDVANIA</option>
-                        <option value="NAVES">NAVES</option>
-                        <option value="ESTRATEGIA">ESTRATEGIA</option> 
-                        <option value="OTROS">OTROS</option>
+                    <select id="add-genero" class="select-add" style="flex:1;">
+                        <option value="RPG">RPG</option><option value="PLATAFORMAS">PLATAFORMAS</option>
+                        <option value="AVENTURA">AVENTURA</option><option value="SHOOTER">SHOOTER</option>
+                        <option value="TERROR">TERROR</option><option value="LUCHA">LUCHA</option>
                     </select>
-
-                    <select id="add-consola" class="select-add">
-                        <option value="ps1">PS1</option><option value="ps2">PS2</option><option value="ps3">PS3</option><option value="ps4">PS4</option><option value="ps5">PS5</option>
-                        <option value="xbox_one_series" selected>Xbox One/Series</option><option value="n_switch">Switch</option>
-                        <option value="mastersystem2">Master System II</option><option value="megadrive">Mega Drive</option>
+                    <select id="add-consola" class="select-add" style="flex:1;">
+                        <option value="ps5">PS5</option><option value="xbox_one_series">Xbox Series</option>
+                        <option value="n_switch">Switch</option><option value="mastersystem2">Master System II</option>
+                        <option value="megadrive">Mega Drive</option>
                     </select>
-
-                    <button onclick="agregarJuego()" class="btn-add" style="margin-top: 14px;">AÑADIR</button>
+                    <button onclick="agregarJuego()" class="btn-add">AÑADIR</button>
                 </div>
                 <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
             </div>
@@ -166,7 +118,7 @@
         <div id="main-container"></div>
     </div>
 
-    <div id="info-footer" class="footer-info">GAMERSHELF PRO v1.1 | CONECTANDO...</div>
+    <div id="info-footer" class="footer-info">CARGANDO COLECCIÓN...</div>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
@@ -189,164 +141,133 @@
         
         let db_local = [];
         let fotoSeleccionada = "";
-        let typingTimer;
-        let bloqueoFooter = false;
         let currentUser = null;
-        let bienvenidaActiva = false;
+        let bloqueoFooter = false;
 
         auth.onAuthStateChanged(user => {
-            const footer = document.getElementById('info-footer');
             if (user) {
                 currentUser = user;
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
-                bienvenidaActiva = true;
-                const nombre = user.displayName ? user.displayName.split(' ')[0] : 'Gamer';
-                footer.innerText = `¡HOLA, ${nombre.toUpperCase()}! PREPARANDO TU ESTANTERÍA...`;
-                
-                setTimeout(() => { 
-                    bienvenidaActiva = false; 
-                    render(document.getElementById('buscador').value); 
-                }, 4000);
                 refreshData();
             } else {
-                currentUser = null;
                 document.getElementById('login-screen').style.display = 'flex';
                 document.getElementById('app-content').style.display = 'none';
-                footer.innerText = "ESPERANDO INICIO DE SESIÓN...";
-                footer.style.background = "#333";
             }
         });
 
         function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
         function logout() { auth.signOut().then(() => location.reload()); }
 
-        // --- BÚSQUEDA RAWG ---
+        // Sugerencias RAWG
         const inputTitulo = document.getElementById('add-titulo');
-        const suggestionsBox = document.getElementById('suggestions');
-
         inputTitulo.addEventListener('input', () => {
-            clearTimeout(typingTimer);
-            const query = inputTitulo.value.trim();
-            if (query.length >= 3) { typingTimer = setTimeout(() => buscarEnRAWG(query), 500); }
-            else { suggestionsBox.style.display = "none"; }
+            const q = inputTitulo.value.trim();
+            if (q.length > 2) buscarRAWG(q);
         });
 
-        async function buscarEnRAWG(q) {
-            try {
-                const res = await fetch(`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${encodeURIComponent(q)}&page_size=5`);
-                const data = await res.json();
-                suggestionsBox.innerHTML = "";
-                if (data.results && data.results.length > 0) {
-                    suggestionsBox.style.display = "block";
-                    data.results.forEach(game => {
-                        const div = document.createElement('div');
-                        div.className = "suggestion-item";
-                        div.innerHTML = `<img src="${game.background_image || ''}"> <span>${game.name}</span>`;
-                        div.onclick = () => {
-                            inputTitulo.value = game.name.toUpperCase();
-                            fotoSeleccionada = game.background_image;
-                            suggestionsBox.style.display = "none";
-                        };
-                        suggestionsBox.appendChild(div);
-                    });
-                }
-            } catch (e) { console.error(e); }
+        async function buscarRAWG(q) {
+            const res = await fetch(`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${q}&page_size=5`);
+            const data = await res.json();
+            const box = document.getElementById('suggestions');
+            box.innerHTML = "";
+            if (data.results.length) {
+                box.style.display = "block";
+                data.results.forEach(g => {
+                    const d = document.createElement('div');
+                    d.className = "suggestion-item";
+                    d.innerHTML = `<img src="${g.background_image}"> <span>${g.name}</span>`;
+                    d.onclick = () => {
+                        inputTitulo.value = g.name.toUpperCase();
+                        fotoSeleccionada = g.background_image;
+                        box.style.display = "none";
+                    };
+                    box.appendChild(d);
+                });
+            }
         }
 
         function refreshData() {
-            if(!currentUser) return;
             db.collection("juegos").where("userId", "==", currentUser.uid).onSnapshot(snap => {
                 db_local = [];
                 snap.forEach(doc => db_local.push({ id: doc.id, ...doc.data() }));
-                render(document.getElementById('buscador').value);
+                render();
             });
         }
 
-        function render(filtro = "") {
+        function render() {
             const container = document.getElementById('main-container');
             container.innerHTML = "";
-            const filtrados = db_local.filter(j => j.titulo.toLowerCase().includes(filtro.toLowerCase()));
-            
-            // Lógica de agrupación por consola...
+            const filtro = document.getElementById('buscador').value.toLowerCase();
+            const filtrados = db_local.filter(j => j.titulo.toLowerCase().includes(filtro));
+
             const porConsola = filtrados.reduce((acc, j) => { acc[j.consola] = acc[j.consola] || []; acc[j.consola].push(j); return acc; }, {});
 
             Object.keys(porConsola).sort().forEach(c => {
                 const section = document.createElement('div');
                 section.className = 'console-section';
-                section.innerHTML = `<div class="console-header"><img src="imagenes/${c}.png" onerror="this.style.display='none'"><h2>${c.toUpperCase()} (${porConsola[c].length})</h2></div>`;
-                const grid = document.createElement('div');
-                grid.className = 'genres-grid';
+                section.innerHTML = `
+                    <div class="console-header">
+                        <img src="imagenes/${c}.png" onerror="this.style.display='none'">
+                        <h2>${c.toUpperCase()} (${porConsola[c].length})</h2>
+                    </div>
+                    <div class="genres-grid"></div>
+                `;
                 
+                const grid = section.querySelector('.genres-grid');
                 const porGen = porConsola[c].reduce((acc, j) => { acc[j.genero] = acc[j.genero] || []; acc[j.genero].push(j); return acc; }, {});
 
                 Object.keys(porGen).sort().forEach(g => {
                     const box = document.createElement('div');
                     box.className = 'genre-box';
-                    box.innerHTML = `<h3>${g} (${porGen[g].length})</h3>
-                        <ul>${porGen[g].map(j => `<li><img src="${j.foto || ''}" class="game-thumb"><span class="game-title">${j.titulo}</span><button class="btn-del" onclick="borrarJuego('${j.id}')">✕</button></li>`).join('')}</ul>`;
+                    box.innerHTML = `<h3>${g}</h3><ul>${porGen[g].map(j => `
+                        <li><img src="${j.foto}" class="game-thumb"> <span class="game-title">${j.titulo}</span> <button class="btn-del" onclick="borrarJuego('${j.id}')">✕</button></li>
+                    `).join('')}</ul>`;
                     grid.appendChild(box);
                 });
-                section.appendChild(grid);
                 container.appendChild(section);
             });
 
-            // Actualizar footer
-            if (!bloqueoFooter && currentUser && !bienvenidaActiva) {
-                document.getElementById('info-footer').innerText = `TOTAL: ${filtrados.length} JUEGOS EN TU COLECCIÓN`;
-                document.getElementById('info-footer').style.background = "#107c10";
-            }
+            if(!bloqueoFooter) document.getElementById('info-footer').innerText = `ESTANTERÍA: ${filtrados.length} JUEGOS`;
         }
 
+        /* --- LOGICA DE AGREGAR CON VALIDACIÓN DE DUPLICADOS --- */
         function agregarJuego() {
-			const t = inputTitulo.value.trim().toUpperCase(); // Título en mayúsculas
-			const g = document.getElementById('add-genero').value;
-			const c = document.getElementById('add-consola').value;
+            const t = inputTitulo.value.trim().toUpperCase();
+            const g = document.getElementById('add-genero').value;
+            const c = document.getElementById('add-consola').value;
 
-			if(!t || !currentUser) return;
+            if(!t) return;
 
-			// --- VALIDACIÓN DE DUPLICADOS ---
-			const existe = db_local.some(j => j.titulo.toUpperCase() === t && j.consola === c);
+            // COMPROBAR SI YA EXISTE EN ESA CONSOLA
+            const yaExiste = db_local.some(j => j.titulo.toUpperCase() === t && j.consola === c);
 
-			if (existe) {
-				mostrarFeedback(`⚠️ YA TIENES ${t} EN ${c.toUpperCase()}`, "#e67e22"); // Naranja de aviso
-				return; // Detiene la ejecución, no añade nada
-			}
+            if (yaExiste) {
+                mostrarFeedback(`⚠️ ${t} YA ESTÁ EN ${c.toUpperCase()}`, "#e67e22");
+                return;
+            }
 
-			// Si no existe, procedemos a añadirlo
-			db.collection("juegos").add({ 
-				titulo: t, 
-				genero: g, 
-				consola: c, 
-				foto: fotoSeleccionada, 
-				fecha: new Date(), 
-				userId: currentUser.uid 
-			}).then(() => {
-				mostrarFeedback(`✅ AÑADIDO: ${t}`, "#2ecc71");
-				inputTitulo.value = ""; 
-				fotoSeleccionada = "";
-			});
-		}
+            db.collection("juegos").add({ 
+                titulo: t, genero: g, consola: c, 
+                foto: fotoSeleccionada, userId: currentUser.uid, fecha: new Date() 
+            }).then(() => {
+                mostrarFeedback(`✅ AÑADIDO: ${t}`, "#2ecc71");
+                inputTitulo.value = ""; fotoSeleccionada = "";
+            });
+        }
 
         function borrarJuego(id) {
-            const juego = db_local.find(j => j.id === id);
-            if(confirm(`¿Eliminar ${juego.titulo.toUpperCase()}?`)) {
-                db.collection("juegos").doc(id).delete().then(() => mostrarFeedback(`❌ ELIMINADO: ${juego.titulo.toUpperCase()}`, "#e74c3c"));
-            }
+            if(confirm("¿Eliminar este juego?")) db.collection("juegos").doc(id).delete();
         }
 
         function mostrarFeedback(msg, color) {
-            const footer = document.getElementById('info-footer');
+            const f = document.getElementById('info-footer');
             bloqueoFooter = true;
-            footer.innerText = msg;
-            footer.style.background = color;
-            setTimeout(() => {
-                bloqueoFooter = false;
-                render(document.getElementById('buscador').value);
-            }, 3000);
+            f.innerText = msg; f.style.background = color;
+            setTimeout(() => { bloqueoFooter = false; render(); f.style.background = "#107c10"; }, 3000);
         }
 
-        document.getElementById('buscador').addEventListener('input', (e) => render(e.target.value));
+        document.getElementById('buscador').addEventListener('input', render);
     </script>
 </body>
 </html>
