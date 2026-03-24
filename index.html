@@ -9,16 +9,14 @@
     <link rel="icon" href="data:,">
 
     <style>
-        /* [ESTILOS ANTERIORES SE MANTIENEN] */
         body { font-family: 'Segoe UI', sans-serif; background: #000; color: #e0e0e0; margin: 0; padding: 20px 20px 100px; }
         header { max-width: 900px; margin: 0 auto 30px; text-align: center; }
         .header-logo { max-width: 100%; height: auto; margin-top: 10px; }
         #login-screen, #app-content { display: none; }
-        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #00; display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; z-index: 9999; }
         #login-screen { text-align: center; margin-top: 100px; flex-direction: column; align-items: center; gap: 20px; position: relative; max-width: 400px; margin: 100px auto 0; }
         .btn-google { background: white; color: #444; padding: 12px 24px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 1rem; z-index: 10; }
         .tools-container { max-width: 900px; margin: 0 auto 40px; padding: 25px; background: #1a1a1a; border-radius: 15px; border: 1px solid #333; position: relative; display: flex; flex-direction: column; gap: 15px; }
-        .deco-img { position: absolute; width: 38px; height: auto; filter: drop-shadow(0px 0px 8px rgba(0,0,0,0.5)); z-index: 1; }
         .form-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; position: relative; z-index: 50; }
         #buscador { padding: 12px 25px; border-radius: 25px; border: 2px solid #333; background: #1e1e1e; color: white; width: 80%; outline: none; margin-bottom: 10px; align-self: center; }
         .autocomplete-container { position: relative; flex: 2; min-width: 200px; display: flex; gap: 5px; }
@@ -154,7 +152,6 @@
             const code = data.codeResult.code;
             stopScanner();
             playSound('add');
-            mostrarFeedback(`🔍 BUSCANDO CÓDIGO: ${code}`, "#3498db");
             buscarPorCodigo(code);
         });
 
@@ -163,22 +160,56 @@
             document.getElementById('scanner-container').style.display = 'none';
         }
 
+        // --- NUEVA LÓGICA DE BÚSQUEDA AVANZADA ---
         async function buscarPorCodigo(ean) {
-            // Nota: RAWG no busca por EAN directamente, buscamos el código como texto
-            // Muchos juegos en su título incluyen el ID o podemos intentar buscar el código
-            const res = await fetch(`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${ean}`);
-            const data = await res.json();
-            if(data.results.length > 0) {
-                const game = data.results[0];
-                document.getElementById('add-titulo').value = game.name.toUpperCase();
-                fotoSeleccionada = game.background_image;
-                mostrarFeedback(`🎯 ENCONTRADO: ${game.name}`, "#44cf6c");
-            } else {
-                mostrarFeedback(`❌ NO ENCONTRADO EN RAWG`, "#e74c3c");
+            mostrarFeedback(`🔍 ESCANEADO: ${ean}. BUSCANDO...`, "#3498db");
+            
+            try {
+                // Estrategia 1: Google Books (Suele tener casi todos los códigos EAN/ISBN de juegos)
+                const resGoogle = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${ean}`);
+                const dataGoogle = await resGoogle.json();
+
+                if (dataGoogle.totalItems > 0) {
+                    const tituloEncontrado = dataGoogle.items[0].volumeInfo.title;
+                    procesarHallazgo(tituloEncontrado);
+                } else {
+                    // Estrategia 2: Respaldo en RAWG por si el código está en su base de datos
+                    const resRawg = await fetch(`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${ean}`);
+                    const dataRawg = await resRawg.json();
+                    
+                    if (dataRawg.results.length > 0) {
+                        procesarHallazgo(dataRawg.results[0].name);
+                    } else {
+                        // Si nada funciona
+                        mostrarFeedback(`❌ NO ESTÁ EN LA BASE DE DATOS. ESCRÍBELO A MANO.`, "#e74c3c");
+                        document.getElementById('add-titulo').value = "";
+                        document.getElementById('add-titulo').placeholder = "No encontrado, escribe título...";
+                        document.getElementById('add-titulo').focus();
+                    }
+                }
+            } catch (error) {
+                console.error("Error en búsqueda:", error);
+                mostrarFeedback("🚀 ERROR DE CONEXIÓN", "#c0392b");
             }
         }
 
-        // --- LÓGICA FIREBASE Y RENDER (Sigue igual) ---
+        function procesarHallazgo(titulo) {
+            const t = titulo.toUpperCase();
+            document.getElementById('add-titulo').value = t;
+            // Una vez tenemos el nombre, pedimos a RAWG la foto automáticamente
+            buscarFoto(t);
+            mostrarFeedback(`🎯 ENCONTRADO: ${t}`, "#44cf6c");
+        }
+
+        async function buscarFoto(nombre) {
+            const res = await fetch(`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${nombre}&page_size=1`);
+            const data = await res.json();
+            if(data.results.length > 0) {
+                fotoSeleccionada = data.results[0].background_image;
+            }
+        }
+
+        // --- LÓGICA FIREBASE Y RENDER ---
         auth.onAuthStateChanged(user => {
             document.getElementById('loading-overlay').style.display = 'none';
             if (user) {
