@@ -71,6 +71,21 @@
             position: relative; display: flex; flex-direction: column; gap: 15px;
         }
 
+        /* CONTENEDOR SIMÉTRICO PARA BOTÓN Y CASCOS */
+        .header-skin-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+
+        .deco-helmet {
+            width: 32px;
+            height: auto;
+            filter: drop-shadow(0px 0px 5px rgba(0,0,0,0.5));
+        }
+
         #skin-selector {
             display: none;
             grid-template-columns: repeat(3, 1fr);
@@ -89,10 +104,11 @@
         .skin-option:active { transform: scale(0.95); }
         .skin-option img { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; border: 2px solid transparent; transition: filter 0.3s; }
         .skin-option p { font-size: 0.6rem; margin: 5px 0 0; font-weight: bold; color: #888; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        
         .btn-skin-toggle {
             background: #333; color: #ccc; border: 1px solid #444;
             padding: 5px 15px; border-radius: 20px; cursor: pointer;
-            align-self: center; font-size: 0.7rem; margin-bottom: 5px;
+            font-size: 0.7rem;
         }
 
         .skin-img-wrapper {
@@ -134,7 +150,6 @@
         .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 10px; }
         .suggestion-item img { width: 40px; height: 55px; object-fit: cover; border-radius: 3px; }
 
-        /* Estilos para el contenedor de añadir con iconos */
         .add-controls-wrapper {
             display: flex;
             align-items: center;
@@ -142,8 +157,8 @@
             margin-top: 14px;
         }
         .add-controls-wrapper .deco-img {
-            position: static; /* Anulamos posicionamiento absoluto */
-            filter: drop-shadow(0px 0px 4px rgba(0,0,0,0.3)); /* Sombra más suave */
+            position: static; 
+            filter: drop-shadow(0px 0px 4px rgba(0,0,0,0.3)); 
         }
 
         .btn-add { cursor:pointer; background: var(--main-color); border:none; padding:10px 20px; border-radius:8px; font-weight:bold; color: #000; transition: var(--transition-speed); }
@@ -191,7 +206,11 @@
             <img src="imagenes/titulo.png" alt="GamerShelf Pro" class="header-logo">
             <div class="tools-container">
                 
-                <button class="btn-skin-toggle" onclick="toggleSkins()">🎨 CAMBIAR ASPECTO</button>
+                <div class="header-skin-container">
+                    <img src="imagenes/casco.png" class="deco-helmet" alt="Casco Izquierdo">
+                    <button class="btn-skin-toggle" onclick="toggleSkins()">🎨 CAMBIAR ASPECTO</button>
+                    <img src="imagenes/casco.png" class="deco-helmet" alt="Casco Derecho">
+                </div>
                 
                 <div id="skin-selector">
                     <div class="skin-option" onclick="aplicarSkin('original', '#107c10', 'skin1.png'); toggleSkins();">
@@ -400,7 +419,7 @@
             localStorage.setItem('gamerShelf_skin_color', color);
             localStorage.setItem('gamerShelf_skin_img', img);
             render(document.getElementById('buscador').value);
-            actualizarLabelsSkins(); // Actualizamos colores de etiquetas tras cambio
+            actualizarLabelsSkins(); 
         }
 
         function restaurarSkin() {
@@ -411,7 +430,7 @@
                 document.getElementById('meta-theme').content = savedColor;
                 const avatar = document.getElementById('avatar-principal');
                 if(avatar) avatar.src = `imagenes/${savedImg}`;
-                actualizarLabelsSkins(); // Aseguramos colores correctos al restaurar
+                actualizarLabelsSkins(); 
             }
         }
 
