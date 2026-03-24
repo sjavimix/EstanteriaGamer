@@ -26,10 +26,8 @@
         header { max-width: 900px; margin: 0 auto 30px; text-align: center; }
         .header-logo { max-width: 100%; height: auto; margin-top: 10px; }
         
-        /* --- ESTADO INICIAL: OCULTO PARA EVITAR PARPADEO --- */
         #login-screen, #app-content { display: none; }
 
-        /* --- PANTALLA DE CARGA INICIAL --- */
         #loading-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -73,7 +71,6 @@
             position: relative; display: flex; flex-direction: column; gap: 15px;
         }
 
-        /* --- ESTILO DEL SELECTOR DE SKINS --- */
         #skin-selector {
             display: none;
             grid-template-columns: repeat(3, 1fr);
@@ -98,7 +95,6 @@
             align-self: center; font-size: 0.7rem; margin-bottom: 5px;
         }
 
-        /* --- CLASES NUEVAS PARA EL CANDADO --- */
         .skin-img-wrapper {
             position: relative;
             display: inline-block;
@@ -109,8 +105,8 @@
             left: 50%;
             transform: translate(-50%, -50%);
             font-size: 1.2rem;
-            display: none; /* Por defecto oculto, JS lo muestra si está bloqueado */
-            pointer-events: none; /* Para que el clic pase a través de él hacia el contenedor */
+            display: none;
+            pointer-events: none;
         }
 
         .deco-img { 
@@ -186,7 +182,7 @@
                 <button class="btn-skin-toggle" onclick="toggleSkins()">🎨 CAMBIAR ASPECTO</button>
                 
                 <div id="skin-selector">
-                    <div class="skin-option" onclick="aplicarSkin('original', '#107c10', 'skin1.png')">
+                    <div class="skin-option" onclick="aplicarSkin('original', '#107c10', 'skin1.png'); toggleSkins();">
                         <div class="skin-img-wrapper">
                             <img src="imagenes/skin1.png">
                         </div>
@@ -304,7 +300,6 @@
         let currentUser = null;
         let bienvenidaActiva = false;
 
-        // --- NUEVA LÓGICA DE SKINS ACUMULATIVA ---
         const requisitosSkins = {
             'original': 0,
             'mario': 5,
@@ -314,10 +309,9 @@
         function toggleSkins() {
             const div = document.getElementById('skin-selector');
             div.style.display = (div.style.display === 'grid') ? 'none' : 'grid';
-            actualizarLabelsSkins(); // Actualiza los textos y candados al abrir
+            actualizarLabelsSkins();
         }
 
-        // Modificada para controlar textos, imágenes y el candadito
         function actualizarLabelsSkins() {
             Object.keys(requisitosSkins).forEach(id => {
                 const label = document.getElementById(`label-${id}`);
@@ -342,7 +336,6 @@
             });
         }
 
-        // Llamamos a la función al cargar la página para que los candados salgan desde el minuto 1
         actualizarLabelsSkins();
 
         function simularAnuncio(id, color, img) {
@@ -370,7 +363,6 @@
                         aplicarSkin(id, color, img);
                         mostrarFeedback("✨ ¡NUEVO ASPECTO DESBLOQUEADO!", color);
                         toggleSkins();
-                        actualizarLabelsSkins(); // Limpia los estados si no se cerrara
                     } else {
                         mostrarFeedback(`📺 ANUNCIO VISTO (${vistos}/${objetivo})`, "#3498db");
                         actualizarLabelsSkins();
@@ -381,35 +373,38 @@
 
         function aplicarSkin(id, color, img) {
             document.documentElement.style.setProperty('--main-color', color);
-            document.getElementById('avatar-principal').src = `imagenes/${img}`;
+            const avatar = document.getElementById('avatar-principal');
+            if(avatar) avatar.src = `imagenes/${img}`;
             document.getElementById('meta-theme').content = color;
             localStorage.setItem('gamerShelf_skin_color', color);
             localStorage.setItem('gamerShelf_skin_img', img);
             render(document.getElementById('buscador').value);
         }
 
-        // Cargar Skin al iniciar
-        const savedColor = localStorage.getItem('gamerShelf_skin_color');
-        const savedImg = localStorage.getItem('gamerShelf_skin_img');
-        if(savedColor && savedImg) {
-            document.documentElement.style.setProperty('--main-color', savedColor);
-            setTimeout(() => {
+        function restaurarSkin() {
+            const savedColor = localStorage.getItem('gamerShelf_skin_color');
+            const savedImg = localStorage.getItem('gamerShelf_skin_img');
+            if(savedColor && savedImg) {
+                document.documentElement.style.setProperty('--main-color', savedColor);
+                document.getElementById('meta-theme').content = savedColor;
                 const avatar = document.getElementById('avatar-principal');
                 if(avatar) avatar.src = `imagenes/${savedImg}`;
-                document.getElementById('meta-theme').content = savedColor;
-            }, 100);
+            }
         }
 
-        // LÓGICA DE CONTROL DE ACCESO
         auth.onAuthStateChanged(user => {
             document.getElementById('loading-overlay').style.display = 'none';
             if (user) {
                 currentUser = user;
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
+                
+                restaurarSkin(); 
+
                 bienvenidaActiva = true;
                 const nombre = user.displayName ? user.displayName.split(' ')[0].toUpperCase() : 'GAMER';
                 document.getElementById('info-footer').innerText = `¡HOLA, ${nombre}! PREPARANDO TU ESTANTERÍA...`;
+                
                 setTimeout(() => { 
                     bienvenidaActiva = false; 
                     render(document.getElementById('buscador').value); 
