@@ -94,35 +94,50 @@
                         <div id="suggestions" class="suggestions"></div>
                     </div>
                     
+                    <select id="add-genero" class="select-add" style="flex: 1; min-width: 120px;">
+                        <option value="RPG">RPG</option>
+                        <option value="PLATAFORMAS">PLATAFORMAS</option>
+                        <option value="LUCHA">LUCHA</option>
+                        <option value="TERROR">TERROR</option>
+                        <option value="SHOOTER">SHOOTER</option>
+                        <option value="AVENTURA">AVENTURA</option>
+                        <option value="CONDUCCION">CONDUCCIÓN</option>
+                        <option value="DEPORTES">DEPORTES</option>
+                        <option value="METROIDVANIA">METROIDVANIA</option>
+                        <option value="NAVES">NAVES</option>
+                        <option value="ESTRATEGIA">ESTRATEGIA</option> 
+                        <option value="OTROS">OTROS</option>
+                    </select>
+
                     <select id="add-consola" class="select-add">
                         <optgroup label="Sony">
-                            <option value="PS1">PS1</option>
-                            <option value="PS2">PS2</option>
-                            <option value="PS3">PS3</option>
-                            <option value="PS4">PS4</option>
-                            <option value="PS5">PS5</option>
+                            <option value="ps1">PS1</option>
+                            <option value="ps2">PS2</option>
+                            <option value="ps3">PS3</option>
+                            <option value="ps4">PS4</option>
+                            <option value="ps5">PS5</option>
                         </optgroup>
                         <optgroup label="Microsoft">
-                            <option value="XBOX">Xbox Clásica</option>
-                            <option value="X360">Xbox 360</option>
-                            <option value="XONE/SERIES" selected>Xbox One/Series</option>
+                            <option value="xbox_clasica">Xbox Clásica</option>
+                            <option value="xbox_360">Xbox 360</option>
+                            <option value="xbox_one_series" selected>Xbox One/Series</option>
                         </optgroup>
                         <optgroup label="Nintendo">
-                            <option value="GB">Game Boy</option>
-                            <option value="NES">NES</option>
-                            <option value="SNES">Super Nintendo</option>
-                            <option value="N64">Nintendo 64</option>
-                            <option value="GCN">GameCube</option>
-                            <option value="WII">Wii</option>
-                            <option value="WIIU">Wii U</option>
-                            <option value="SWITCH">Switch</option>
+                            <option value="gameboy">Game Boy</option>
+                            <option value="nintendo">NES</option>
+                            <option value="super_nintendo">Super Nintendo</option>
+                            <option value="n64">Nintendo 64</option>
+                            <option value="gamecube">GameCube</option>
+                            <option value="wii">Wii</option>
+                            <option value="wii_u">Wii U</option>
+                            <option value="n_switch">Switch</option>
                         </optgroup>
                         <optgroup label="Sega">
-                            <option value="MS II">Master System II</option>
-                            <option value="MD">Mega Drive</option>
-                            <option value="GG">Game Gear</option>
-                            <option value="SATURN">Sega Saturn</option>
-                            <option value="DC">Dreamcast</option>
+                            <option value="mastersystem2">Master System II</option>
+                            <option value="megadrive">Mega Drive</option>
+                            <option value="gamegear">Game Gear</option>
+                            <option value="saturn">Sega Saturn</option>
+                            <option value="dreamcast">Dreamcast</option>
                         </optgroup>
                         <optgroup label="Otros">
                             <option value="PCE">PC Engine</option>
@@ -166,8 +181,6 @@
         let currentUser = null;
         let mostrandoSaludo = false;
 
-        // --- GESTIÓN DE USUARIO Y LOGIN ---
-
         auth.onAuthStateChanged(user => {
             if (user) {
                 currentUser = user;
@@ -210,7 +223,6 @@
 
         function logout() { auth.signOut().then(() => { location.reload(); }); }
 
-        // --- LÓGICA DE JUEGOS ---
         const inputTitulo = document.getElementById('add-titulo');
         const suggestionsBox = document.getElementById('suggestions');
 
@@ -272,28 +284,38 @@
                 const section = document.createElement('div');
                 section.className = 'console-section';
 
-                // --- TRADUCTOR DE NOMBRES ---
-                // Mapeo manual para corregir bases de datos antiguas
-                let nombreLimpio = c.toUpperCase();
+                // --- TRADUCTOR DEFINITIVO COINCIDENTE CON TUS VALUES ---
                 const traducciones = {
-                    "GAMEBOY": "GAME BOY",
-                    "SUPER_NINTENDO": "SNES",
-                    "XONE/SERIES": "XBOX ONE / SERIES",
-                    "MS II": "MASTER SYSTEM II",
-                    "MD": "MEGA DRIVE",
-                    "GG": "GAME GEAR",
-                    "DC": "DREAMCAST",
+                    "ps1": "PS1",
+                    "ps2": "PS2",
+                    "ps3": "PS3",
+                    "ps4": "PS4",
+                    "ps5": "PS5",
+                    "xbox_clasica": "XBOX CLÁSICA",
+                    "xbox_360": "XBOX 360",
+                    "xbox_one_series": "XBOX ONE / SERIES",
+                    "gameboy": "GAME BOY",
+                    "nintendo": "NES",
+                    "super_nintendo": "SUPER NINTENDO",
+                    "n64": "NINTENDO 64",
+                    "gamecube": "GAMECUBE",
+                    "wii": "WII",
+                    "wii_u": "WII U",
+                    "n_switch": "NINTENDO SWITCH",
+                    "mastersystem2": "MASTER SYSTEM II",
+                    "megadrive": "MEGA DRIVE",
+                    "gamegear": "GAME GEAR",
+                    "saturn": "SEGA SATURN",
+                    "dreamcast": "DREAMCAST",
                     "PCE": "PC ENGINE"
                 };
                 
-                if (traducciones[nombreLimpio]) {
-                    nombreLimpio = traducciones[nombreLimpio];
-                }
+                let nombreMostrar = traducciones[c] || c.toUpperCase();
 
                 section.innerHTML = `
                     <div class="console-header">
                         <img src="imagenes/${c}.png" onerror="this.style.display='none'">
-                        <h2>${nombreLimpio} (${porConsola[c].length})</h2>
+                        <h2>${nombreMostrar} (${porConsola[c].length})</h2>
                     </div>`;
                 
                 const grid = document.createElement('div');
@@ -323,11 +345,14 @@
         function agregarJuego() {
             const t = inputTitulo.value.trim();
             const c = document.getElementById('add-consola').value;
+            const g = document.getElementById('add-genero').value; // Capturamos el género
+            
             if(!t || !currentUser) return;
 
             db.collection("juegos").add({
                 titulo: t, 
                 consola: c, 
+                genero: g, // Guardamos el género en Firebase
                 foto: fotoSeleccionada, 
                 fecha: new Date(),
                 userId: currentUser.uid 
