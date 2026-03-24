@@ -90,12 +90,27 @@
             transition: transform 0.2s;
         }
         .skin-option:active { transform: scale(0.95); }
-        .skin-option img { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; border: 2px solid transparent; }
+        .skin-option img { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; border: 2px solid transparent; transition: filter 0.3s; }
         .skin-option p { font-size: 0.6rem; margin: 5px 0 0; font-weight: bold; color: #888; }
         .btn-skin-toggle {
             background: #333; color: #ccc; border: 1px solid #444;
             padding: 5px 15px; border-radius: 20px; cursor: pointer;
             align-self: center; font-size: 0.7rem; margin-bottom: 5px;
+        }
+
+        /* --- CLASES NUEVAS PARA EL CANDADO --- */
+        .skin-img-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .lock-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2rem;
+            display: none; /* Por defecto oculto, JS lo muestra si está bloqueado */
+            pointer-events: none; /* Para que el clic pase a través de él hacia el contenedor */
         }
 
         .deco-img { 
@@ -172,15 +187,23 @@
                 
                 <div id="skin-selector">
                     <div class="skin-option" onclick="aplicarSkin('original', '#107c10', 'skin1.png')">
-                        <img src="imagenes/skin1.png">
+                        <div class="skin-img-wrapper">
+                            <img src="imagenes/skin1.png">
+                        </div>
                         <p>XBOX</p>
                     </div>
                     <div class="skin-option" onclick="simularAnuncio('mario', '#e74c3c', 'skin2.png')">
-                        <img src="imagenes/skin2.png">
+                        <div class="skin-img-wrapper">
+                            <img id="img-mario" src="imagenes/skin2.png">
+                            <span id="lock-mario" class="lock-overlay">🔒</span>
+                        </div>
                         <p id="label-mario">MARIO 📺</p>
                     </div>
                     <div class="skin-option" onclick="simularAnuncio('cloud', '#3498db', 'skin3.png')">
-                        <img src="imagenes/skin3.png">
+                        <div class="skin-img-wrapper">
+                            <img id="img-cloud" src="imagenes/skin3.png">
+                            <span id="lock-cloud" class="lock-overlay">🔒</span>
+                        </div>
                         <p id="label-cloud">CLOUD 📺</p>
                     </div>
                 </div>
@@ -291,24 +314,36 @@
         function toggleSkins() {
             const div = document.getElementById('skin-selector');
             div.style.display = (div.style.display === 'grid') ? 'none' : 'grid';
-            actualizarLabelsSkins(); // Actualiza los textos al abrir
+            actualizarLabelsSkins(); // Actualiza los textos y candados al abrir
         }
 
+        // Modificada para controlar textos, imágenes y el candadito
         function actualizarLabelsSkins() {
             Object.keys(requisitosSkins).forEach(id => {
                 const label = document.getElementById(`label-${id}`);
+                const lock = document.getElementById(`lock-${id}`);
+                const img = document.getElementById(`img-${id}`);
+
                 if (label) {
                     const vistos = parseInt(localStorage.getItem(`ads_${id}`)) || 0;
                     const objetivo = requisitosSkins[id];
+                    
                     if (vistos >= objetivo) {
                         label.innerText = id.toUpperCase() + " ✅";
                         label.style.color = "var(--main-color)";
+                        if(lock) lock.style.display = "none";
+                        if(img) img.style.filter = "none";
                     } else {
                         label.innerText = `${id.toUpperCase()} (${vistos}/${objetivo}) 📺`;
+                        if(lock) lock.style.display = "block";
+                        if(img) img.style.filter = "grayscale(100%) brightness(50%)";
                     }
                 }
             });
         }
+
+        // Llamamos a la función al cargar la página para que los candados salgan desde el minuto 1
+        actualizarLabelsSkins();
 
         function simularAnuncio(id, color, img) {
             let vistos = parseInt(localStorage.getItem(`ads_${id}`)) || 0;
@@ -335,6 +370,7 @@
                         aplicarSkin(id, color, img);
                         mostrarFeedback("✨ ¡NUEVO ASPECTO DESBLOQUEADO!", color);
                         toggleSkins();
+                        actualizarLabelsSkins(); // Limpia los estados si no se cerrara
                     } else {
                         mostrarFeedback(`📺 ANUNCIO VISTO (${vistos}/${objetivo})`, "#3498db");
                         actualizarLabelsSkins();
