@@ -28,14 +28,13 @@
         }
         .btn-google:hover { box-shadow: 0 4px 20px rgba(68, 207, 108, 0.4); transform: translateY(-2px); }
 
-        /* --- APP LAYOUT (RESTAURADO) --- */
+        /* --- APP LAYOUT --- */
         .tools-container { 
             max-width: 900px; margin: 0 auto 40px; padding: 25px; 
             background: #1a1a1a; border-radius: 15px; border: 1px solid #333; 
             position: relative; display: flex; flex-direction: column; gap: 15px;
         }
 
-        /* Posiciones originales de los iconos con el nuevo brillo */
         .deco-img { position: absolute; top: 120px; width: 38px; height: auto; filter: drop-shadow(0px 0px 8px rgba(68, 207, 108, 0.6)); z-index: 1; }
         .img-escudo { left: 20px; }
         .img-pocion { right: 20px; }
@@ -46,7 +45,6 @@
         .autocomplete-container { width: 100%; position: relative; }
         .input-add, .select-add { padding: 10px; border-radius: 8px; border: 1px solid #444; background: #252525; color: white; width: 100%; box-sizing: border-box; }
 
-        /* Botón Añadir con tu estilo original + efecto brillo */
         .btn-add { 
             cursor:pointer; background:#44cf6c; border:none; padding:10px 20px; 
             border-radius:8px; font-weight:bold; color: #000; transition: 0.3s;
@@ -64,7 +62,6 @@
 
         .btn-logout { background: none; border: 1px solid #444; color: #888; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.7rem; margin-top: 10px; align-self: center; }
 
-        /* Estilos de secciones de juegos */
         .console-section { background: #161616; border-radius: 15px; margin-bottom: 30px; padding: 20px; border: 1px solid #222; }
         .console-header { display: flex; align-items: center; gap: 15px; border-bottom: 2px solid #44cf6c; padding-bottom: 10px; margin-bottom: 20px; }
         .console-header img { height: 40px; width: auto; background: white; padding: 3px; border-radius: 5px; }
@@ -75,7 +72,9 @@
         .game-thumb { width: 35px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid #444; }
         .game-title { flex-grow: 1; }
         .btn-del { color: #555; background: none; border: none; cursor: pointer; font-size: 1rem; }
-        .footer-info { position: fixed; bottom: 0; left: 0; width: 100%; background: #107c10; color: white; text-align: center; padding: 5px 0; font-weight: bold; z-index: 100; transition: all 0.5s; font-size: 0.9rem; }
+        
+        /* FOOTER DINÁMICO */
+        .footer-info { position: fixed; bottom: 0; left: 0; width: 100%; background: #107c10; color: white; text-align: center; padding: 8px 0; font-weight: bold; z-index: 100; transition: all 0.5s; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -114,7 +113,7 @@
                         <option value="xbox_one_series" selected>Xbox One/Series</option>
                         <option value="ps5">PS5</option>
                         <option value="n_switch">Switch</option>
-                        </select>
+                    </select>
                     <button onclick="agregarJuego()" class="btn-add">AÑADIR</button>
                 </div>
                 
@@ -124,14 +123,13 @@
         <div id="main-container"></div>
     </div>
 
-    <div id="info-footer" class="footer-info">v1.1 | Nube Directa</div>
+    <div id="info-footer" class="footer-info">Cargando...</div>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    
     <script>
-        // ... (Tu configuración de Firebase y funciones JS se mantienen exactamente igual que antes) ...
-        // Asegúrate de usar la lógica de onAuthStateChanged que oculta/muestra los divs
         const firebaseConfig = {
             apiKey: "AIzaSyAb3GqlzjbDTNxLGI8maiF3U0qGieGERdw",
             authDomain: "estanteria-gamer.firebaseapp.com",
@@ -144,22 +142,58 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        let totalJuegosGlobal = 0;
+        let mostrandoSaludo = false;
+
         auth.onAuthStateChanged(user => {
+            const footer = document.getElementById('info-footer');
             if (user) {
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
-                // Lógica de carga de datos...
+                
+                // Mostrar Saludo
+                mostrandoSaludo = true;
+                footer.innerText = `¡Hola, ${user.displayName || 'Gamer'}!`;
+                
+                // Cargar datos
+                escucharJuegos(user.uid);
+
+                // Quitar saludo a los 5 segundos
+                setTimeout(() => {
+                    mostrandoSaludo = false;
+                    actualizarFooter();
+                }, 5000);
+
             } else {
                 document.getElementById('app-content').style.display = 'none';
                 document.getElementById('login-screen').style.display = 'flex';
+                footer.innerText = "v1.1 | Nube Directa";
             }
         });
+
+        // Función para escuchar cambios en la base de datos y contar juegos
+        function escucharJuegos(uid) {
+            // Reemplaza "juegos" por el nombre exacto de tu colección en Firestore
+            db.collection("usuarios").doc(uid).collection("juegos").onSnapshot(snapshot => {
+                totalJuegosGlobal = snapshot.size;
+                if (!mostrandoSaludo) {
+                    actualizarFooter();
+                }
+            });
+        }
+
+        function actualizarFooter() {
+            document.getElementById('info-footer').innerText = `Total de juegos: ${totalJuegosGlobal}`;
+        }
 
         function login() {
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.signInWithPopup(provider);
         }
-        function logout() { auth.signOut().then(() => location.reload()); }
+
+        function logout() { 
+            auth.signOut().then(() => location.reload()); 
+        }
     </script>
 </body>
 </html>
