@@ -71,7 +71,6 @@
             position: relative; display: flex; flex-direction: column; gap: 15px;
         }
 
-        /* CONTENEDOR SIMÉTRICO PARA BOTÓN Y CASCOS */
         .header-skin-container {
             display: flex;
             align-items: center;
@@ -95,15 +94,18 @@
             border-radius: 12px;
             border: 1px solid #444;
             margin-bottom: 10px;
+            max-height: 300px; /* Preparado para las 20 skins */
+            overflow-y: auto;
         }
         .skin-option {
             cursor: pointer;
             text-align: center;
             transition: transform 0.2s;
+            padding: 5px;
         }
         .skin-option:active { transform: scale(0.95); }
         .skin-option img { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; border: 2px solid transparent; transition: filter 0.3s; }
-        .skin-option p { font-size: 0.6rem; margin: 5px 0 0; font-weight: bold; color: #888; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .skin-option p { font-size: 0.6rem; margin: 5px 0 0; font-weight: bold; color: #888; display: flex; align-items: center; justify-content: center; gap: 5px; flex-direction: column; }
         
         .btn-skin-toggle {
             background: #333; color: #ccc; border: 1px solid #444;
@@ -234,6 +236,27 @@
                         </div>
                         <p id="label-cloud"><span>SOLDADO</span> <span id="check-cloud" class="check" style="display:none;">✅</span> 📺</p>
                     </div>
+                    <div class="skin-option" onclick="simularAnuncio('policia', '#2c3e50', 'skin4.png')">
+                        <div class="skin-img-wrapper">
+                            <img id="img-policia" src="imagenes/skin4.png">
+                            <span id="lock-policia" class="lock-overlay">🔒</span>
+                        </div>
+                        <p id="label-policia"><span>POLICIA</span> <span id="check-policia" class="check" style="display:none;">✅</span> 📺</p>
+                    </div>
+                    <div class="skin-option" onclick="simularAnuncio('elfo', '#2ecc71', 'skin5.png')">
+                        <div class="skin-img-wrapper">
+                            <img id="img-elfo" src="imagenes/skin5.png">
+                            <span id="lock-elfo" class="lock-overlay">🔒</span>
+                        </div>
+                        <p id="label-elfo"><span>ELFO</span> <span id="check-elfo" class="check" style="display:none;">✅</span> 📺</p>
+                    </div>
+                    <div class="skin-option" onclick="simularAnuncio('cazador', '#d35400', 'skin6.png')">
+                        <div class="skin-img-wrapper">
+                            <img id="img-cazador" src="imagenes/skin6.png">
+                            <span id="lock-cazador" class="lock-overlay">🔒</span>
+                        </div>
+                        <p id="label-cazador"><span>CAZADOR</span> <span id="check-cazador" class="check" style="display:none;">✅</span> 📺</p>
+                    </div>
                 </div>
 
                 <img id="avatar-principal" src="imagenes/skin1.png" alt="Skin" style="height: 152px; margin-top: -15px; margin-bottom: -10px; align-self: center; transition: all 0.5s ease;">
@@ -332,10 +355,14 @@
         let currentUser = null;
         let bienvenidaActiva = false;
 
+        // GESTIÓN DE SKINS 1.1 (Configura aquí tus 20 skins fácilmente)
         const requisitosSkins = {
             'original': 0,
             'mario': 5,
-            'cloud': 15
+            'cloud': 15,
+            'policia': 15,
+            'elfo': 20,
+            'cazador': 25
         };
 
         function toggleSkins() {
@@ -354,29 +381,27 @@
                 if (label) {
                     const vistos = parseInt(localStorage.getItem(`ads_${id}`)) || 0;
                     const objetivo = requisitosSkins[id];
+                    const spanTexto = label.querySelector('span:first-child');
                     
                     if (vistos >= objetivo) {
                         label.style.color = "var(--main-color)";
                         if(check) check.style.display = "inline";
                         if(lock) lock.style.display = "none";
                         if(img) img.style.filter = "none";
-                        const baseText = label.querySelector('span:first-child').innerText;
-                        label.querySelector('span:first-child').innerText = baseText.replace(/ \(\d+\/\d+\)/, '');
+                        // Limpiar contador si ya se desbloqueó
+                        spanTexto.innerText = spanTexto.innerText.split(' (')[0];
                     } else {
                         label.style.color = "#888";
                         if(check) check.style.display = "none";
                         if(lock) lock.style.display = "block";
                         if(img) img.style.filter = "grayscale(100%) brightness(50%)";
-                        const baseText = label.querySelector('span:first-child').innerText;
-                        if (!baseText.includes('(')) {
-                            label.querySelector('span:first-child').innerText = `${baseText} (${vistos}/${objetivo})`;
-                        }
+                        // Actualizar contador (vistos/objetivo)
+                        const nombreLimpio = spanTexto.innerText.split(' (')[0];
+                        spanTexto.innerText = `${nombreLimpio} (${vistos}/${objetivo})`;
                     }
                 }
             });
         }
-
-        actualizarLabelsSkins();
 
         function simularAnuncio(id, color, img) {
             let vistos = parseInt(localStorage.getItem(`ads_${id}`)) || 0;
