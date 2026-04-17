@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estanteria Gamer v1.0</title>
+    <meta name="theme-color" content="#107c10">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="data:,">
+
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #000000; 
+            color: #e0e0e0; 
+            margin: 0; 
+            padding: 20px; 
+            padding-bottom: 100px; 
+        }
+        header { max-width: 900px; margin: 0 auto 30px; text-align: center; }
+        .header-logo { max-width: 100%; height: auto; margin-top: 10px; }
+        
+        #login-screen, #app-content { display: none; }
+
+        #loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        #login-screen { 
+            text-align: center; 
+            margin-top: 100px; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 20px; 
+            position: relative; 
+            max-width: 400px; 
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .btn-google { 
+            background: white; 
+            color: #444; 
+            padding: 12px 24px; 
+            border-radius: 5px; 
+            border: none; 
+            font-weight: bold; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            font-size: 1rem; 
+            z-index: 10; 
+        }
+        
+        .tools-container { 
+            max-width: 900px; margin: 0 auto 40px; padding: 25px; 
+            background: #1a1a1a; border-radius: 15px; border: 1px solid #333; 
+            position: relative; display: flex; flex-direction: column; gap: 15px;
+        }
+
+        .deco-img { 
+            position: absolute; 
+            width: 38px; 
+            height: auto; 
+            filter: drop-shadow(0px 0px 8px rgba(0,0,0,0.5)); 
+            z-index: 1; 
+        }
+
+        #login-screen .img-pocion { top: calc(100% - 52px); right: 10px; }
+        #login-screen .img-escudo { top: calc(100% - 46px); left: 5px; }
+
+        .tools-container .deco-img { top: 360px; }
+        .tools-container .img-escudo { left: 20px; }
+        .tools-container .img-pocion { right: 20px; margin-top: -6px; }
+
+        .form-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; position: relative; z-index: 50; }
+        #buscador { padding: 12px 25px; border-radius: 25px; border: 2px solid #333; background: #1e1e1e; color: white; width: 80%; outline: none; margin-bottom: 10px; align-self: center; }
+        
+        .autocomplete-container { position: relative; flex: 2; min-width: 200px; }
+        .input-add, .select-add { padding: 10px; border-radius: 8px; border: 1px solid #444; background: #252525; color: white; width: 100%; box-sizing: border-box; }
+
+        .suggestions { position: absolute; top: 100%; left: 0; right: 0; background: #252525; border: 2px solid #44cf6c; border-radius: 0 0 8px 8px; z-index: 99999; max-height: 250px; overflow-y: auto; display: none; }
+        .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 10px; }
+        .suggestion-item img { width: 40px; height: 55px; object-fit: cover; border-radius: 3px; }
+
+        .btn-add { cursor:pointer; background:#44cf6c; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; color: #000; transition: 0.3s; }
+        .btn-logout { background: none; border: 1px solid #444; color: #888; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.7rem; margin-top: 10px; }
+
+        .console-section { background: #161616; border-radius: 15px; margin-bottom: 30px; padding: 20px; border: 1px solid #222; }
+        .console-header { display: block; border-bottom: 2px solid #44cf6c; padding-bottom: 10px; margin-bottom: 20px; }
+        .header-content { display: flex; align-items: center; gap: 15px; }
+        .console-header img { height: 40px; width: auto; background: white; padding: 3px; border-radius: 5px; flex-shrink: 0; }
+        .console-header h2 { margin: 0; flex: 1; min-width: 0; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.2; font-size: 1.4rem; text-align: left; }
+
+        .genres-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; text-align: left; }
+        .genre-box { background: #1e1e1e; padding: 12px; border-radius: 8px; }
+        .genre-box h3 { text-align: left; margin-top: 0; }
+        ul { list-style: none; padding: 0; margin: 0; }
+        li { padding: 8px; border-bottom: 1px solid #2a2a2a; font-size: 0.85rem; display: flex; align-items: center; gap: 12px; justify-content: flex-start; }
+        .game-thumb { width: 35px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid #444; flex-shrink: 0; }
+        .game-title { flex-grow: 1; text-align: left; }
+        .btn-del { color: #555; background: none; border: none; cursor: pointer; font-size: 1rem; transition: color 0.2s; }
+        .btn-del:hover { color: #ff4d4d; }
+
+        .footer-info { position: fixed; bottom: 0; left: 0; width: 100%; background: #107c10; color: white; text-align: center; padding: 12px 0; font-weight: bold; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.5); font-size: 0.9rem; transition: background 0.3s; }
+    </style>
+</head>
+<body>
+
+    <div id="loading-overlay">
+        <img src="imagenes/titulo.png" style="width: 200px; opacity: 0.5;">
+    </div>
+
+    <div id="login-screen">
+        <img src="imagenes/titulo.png" alt="GamerShelf Pro" style="max-width: 80%;">
+        <p>Tu colección de videojuegos en la nube.</p>
+        <button class="btn-google" id="btn-login" onclick="login()">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20">
+            Entrar con Google
+        </button>
+        <img src="imagenes/escudo.png" class="deco-img img-escudo" alt="Escudo">
+        <img src="imagenes/pocion.png" class="deco-img img-pocion" alt="Poción">
+    </div>
+
+    <div id="app-content">
+        <header>
+            <img src="imagenes/titulo.png" alt="GamerShelf Pro" class="header-logo">
+            <div class="tools-container">
+                <img src="imagenes/skin1.png" alt="Skin" style="height: 152px; margin-top: -40px; margin-bottom: -10px; align-self: center;">
+                <img src="imagenes/escudo.png" class="deco-img img-escudo" alt="Escudo">
+                <img src="imagenes/pocion.png" class="deco-img img-pocion" alt="Poción">
+                <input type="text" id="buscador" placeholder="Buscar en mi colección...">
+                <div class="form-row">
+                    <div class="autocomplete-container">
+                        <input type="text" id="add-titulo" class="input-add" placeholder="Escribe el título...">
+                        <div id="suggestions" class="suggestions"></div>
+                    </div>
+                   <select id="add-genero" class="select-add" style="flex: 1; min-width: 120px;">
+                        <option value="RPG">RPG</option>
+                        <option value="PLATAFORMAS">PLATAFORMAS</option>
+                        <option value="LUCHA">LUCHA</option>
+                        <option value="TERROR">TERROR</option>
+                        <option value="SHOOTER">SHOOTER</option>
+                        <option value="AVENTURA">AVENTURA</option>
+                        <option value="CONDUCCION">CONDUCCIÓN</option>
+                        <option value="DEPORTES">DEPORTES</option>
+                        <option value="METROIDVANIA">METROIDVANIA</option>
+                        <option value="NAVES">NAVES</option>
+                        <option value="ESTRATEGIA">ESTRATEGIA</option> 
+                        <option value="OTROS">OTROS</option>
+                    </select>
+                    <select id="add-consola" class="select-add">
+                        <optgroup label="Sony"><option value="ps1">PS1</option><option value="ps2">PS2</option><option value="ps3">PS3</option><option value="ps4">PS4</option><option value="ps5">PS5</option></optgroup>
+                        <optgroup label="Microsoft"><option value="Xbox Clásica">Xbox Clásica</option><option value="XBOX 360">XBOX 360</option><option value="Xbox One & Series" selected>Xbox One/Series</option></optgroup>
+                        <optgroup label="Nintendo"><option value="GB">GB</option><option value="NES">NES</option><option value="SNES">SNES</option><option value="N64">N64</option><option value="GC">GC</option><option value="wii">Wii</option><option value="wii_u">Wii U</option><option value="SWITCH">SWITCH</option></optgroup>
+                        <optgroup label="Sega"><option value="MSII">MSII</option><option value="MD">MD</option><option value="gamegear">GameGear</option><option value="SS">SS</option><option value="Dreamcast">Dreamcast</option></optgroup>
+                        <optgroup label="NEC"><option value="pcengine">PC Engine</option></optgroup>
+                        <optgroup label="SNK"><option value="neogeo">Neo Geo</option></optgroup>
+                    </select>
+                    <button onclick="agregarJuego()" class="btn-add" style="margin-top: 14px;">AÑADIR</button>
+                </div>
+                <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
+            </div>
+        </header>
+        <div id="main-container"></div>
+    </div>
+
+    <div id="info-footer" class="footer-info">CONECTANDO AL SERVIDOR...</div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAb3GqlzjbDTNxLGI8maiF3U0qGieGERdw",
+            authDomain: "estanteria-gamer.firebaseapp.com",
+            projectId: "estanteria-gamer",
+            storageBucket: "estanteria-gamer.firebasestorage.app",
+            messagingSenderId: "181559174957",
+            appId: "1:181559174957:web:7d6e99f7cd32632ba8d5a4"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const RAWG_KEY = "21c0ccfd8ada49c6b44092b79b9bfbbb";
+        
+        let db_local = [];
+        let fotoSeleccionada = "";
+        let bloqueoFooter = false;
+        let currentUser = null;
+        let bienvenidaActiva = false;
+
+        // --- FUNCIÓN DE SONIDO (BEEP RETRO) ---
+        function playSound(type) {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            if(type === 'delete') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+            } else {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, ctx.currentTime);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+            }
+            osc.start();
+            osc.stop(ctx.currentTime + 0.2);
+        }
+
+        auth.onAuthStateChanged(user => {
+            document.getElementById('loading-overlay').style.display = 'none';
+            if (user) {
+                currentUser = user;
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-content').style.display = 'block';
+                bienvenidaActiva = true;
+                const nombre = user.displayName ? user.displayName.split(' ')[0].toUpperCase() : 'GAMER';
+                document.getElementById('info-footer').innerText = `¡HOLA, ${nombre}! PREPARANDO TU ESTANTERÍA...`;
+                setTimeout(() => { bienvenidaActiva = false; render(document.getElementById('buscador').value); }, 4000);
+                refreshData();
+            } else {
+                currentUser = null;
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('app-content').style.display = 'none';
+            }
+        });
+
+        function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+        function logout() { auth.signOut().then(() => location.reload()); }
+
+        function refreshData() {
+            if(!currentUser) return;
+            db.collection("juegos").where("userId", "==", currentUser.uid).onSnapshot(snap => {
+                db_local = [];
+                snap.forEach(doc => db_local.push({ id: doc.id, ...doc.data() }));
+                render(document.getElementById('buscador').value);
+            });
+        }
+
+        function render(filtro = "") {
+            const container = document.getElementById('main-container');
+            container.innerHTML = "";
+            const filtrados = db_local.filter(j => j.titulo.toLowerCase().includes(filtro.toLowerCase()));
+            const porConsola = filtrados.reduce((acc, j) => { acc[j.consola] = acc[j.consola] || []; acc[j.consola].push(j); return acc; }, {});
+
+            Object.keys(porConsola).sort().forEach(c => {
+                const section = document.createElement('div');
+                section.className = 'console-section';
+                section.innerHTML = `<div class="console-header"><div class="header-content"><img src="imagenes/${c}.png" onerror="this.style.display='none'"><h2>${c.toUpperCase()} (${porConsola[c].length})</h2></div></div><div class="genres-grid"></div>`;
+                const grid = section.querySelector('.genres-grid');
+                const porGen = porConsola[c].reduce((acc, j) => { acc[j.genero] = acc[j.genero] || []; acc[j.genero].push(j); return acc; }, {});
+                Object.keys(porGen).sort().forEach(g => {
+                    const box = document.createElement('div');
+                    box.className = 'genre-box';
+                    box.innerHTML = `<h3>${g} (${porGen[g].length})</h3><ul>${porGen[g].map(j => `<li><img src="${j.foto || ''}" class="game-thumb"><span class="game-title">${j.titulo}</span><button class="btn-del" onclick="borrarJuego('${j.id}')">✕</button></li>`).join('')}</ul>`;
+                    grid.appendChild(box);
+                });
+                container.appendChild(section);
+            });
+            if (!bloqueoFooter && currentUser && !bienvenidaActiva) {
+                document.getElementById('info-footer').innerText = `TOTAL: ${filtrados.length} JUEGOS EN TU COLECCIÓN`;
+                document.getElementById('info-footer').style.background = "#107c10";
+            }
+        }
+
+        function agregarJuego() {
+            const t = document.getElementById('add-titulo').value.trim().toUpperCase();
+            const g = document.getElementById('add-genero').value;
+            const c = document.getElementById('add-consola').value;
+            if(!t || !currentUser) return;
+            if (db_local.some(j => j.titulo.toUpperCase() === t && j.consola === c)) {
+                mostrarFeedback(`⚠️ YA TIENES ${t} EN ${c.toUpperCase()}`, "#e67e22");
+                return;
+            }
+            db.collection("juegos").add({ titulo: t, genero: g, consola: c, foto: fotoSeleccionada, userId: currentUser.uid, fecha: new Date() }).then(() => {
+                playSound('add');
+                mostrarFeedback(`✅ AÑADIDO: ${t}`, "#2ecc71");
+                document.getElementById('add-titulo').value = "";
+                fotoSeleccionada = "";
+                document.getElementById('suggestions').style.display = "none";
+            });
+        }
+
+        function borrarJuego(id) {
+            const juegoAEliminar = db_local.find(j => j.id === id);
+            if (!juegoAEliminar) return;
+
+            if (confirm(`¿BORRAR "${juegoAEliminar.titulo}"?`)) {
+                db.collection("juegos").doc(id).delete().then(() => {
+                    playSound('delete');
+                    mostrarFeedback(`🗑️ SE HA ELIMINADO ${juegoAEliminar.titulo} (${juegoAEliminar.consola.toUpperCase()})`, "#e74c3c");
+                });
+            }
+        }
+
+        function mostrarFeedback(msg, color) {
+            const f = document.getElementById('info-footer');
+            bloqueoFooter = true; f.innerText = msg; f.style.background = color;
+            setTimeout(() => { bloqueoFooter = false; render(document.getElementById('buscador').value); }, 3000);
+        }
+
+        document.getElementById('add-titulo').addEventListener('input', async (e) => {
+            const q = e.target.value;
+            if(q.length < 3) return;
+            const res = await fetch(`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${q}&page_size=5`);
+            const data = await res.json();
+            const s = document.getElementById('suggestions');
+            s.innerHTML = ""; s.style.display = "block";
+            data.results.forEach(game => {
+                const d = document.createElement('div');
+                d.className = "suggestion-item";
+                d.innerHTML = `<img src="${game.background_image}"><span>${game.name}</span>`;
+                d.onclick = () => { document.getElementById('add-titulo').value = game.name.toUpperCase(); fotoSeleccionada = game.background_image; s.style.display="none"; };
+                s.appendChild(d);
+            });
+        });
+        document.getElementById('buscador').addEventListener('input', (e) => render(e.target.value));
+    </script>
+</body>
+</html>
