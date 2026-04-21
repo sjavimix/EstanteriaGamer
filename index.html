@@ -371,23 +371,57 @@
             }
         }
 
-        function ofrecerPackPro() {
-            if(confirm("👑 DESBLOQUEA ESTANTERÍA GAMER PRO\n\nPor solo 2,99€ apoya el desarrollo de la app y desbloquea todos los avatares y colores para siempre.\n\n¿Quieres desbloquear el Pack Pro?")) {
-                const footer = document.getElementById('info-footer');
-                bloqueoFooter = true;
-                footer.innerText = "💳 PROCESANDO PAGO...";
-                footer.style.background = "#f39c12";
+        // --- NUEVA FUNCIÓN PARA GOOGLE PLAY BILLING ---
+        async function ofrecerPackPro() {
+            // 1. Mostrar mensaje de confirmación
+            let quiereComprar = confirm("👑 DESBLOQUEA ESTANTERÍA GAMER PRO\n\nPor solo 2,99€ apoya el desarrollo de la app y desbloquea todos los avatares y colores para siempre.\n\n¿Quieres desbloquear el Pack Pro?");
+            
+            if (!quiereComprar) return;
 
-                setTimeout(() => {
-                    esPro = true;
-                    localStorage.setItem('gamerShelf_pro', 'true');
-                    bloqueoFooter = false;
-                    
-                    mostrarFeedback("👑 ¡GRACIAS POR TU APOYO! Eres usuario PRO.", "#f1c40f");
-                    actualizarLabelsSkins(); 
-                }, 2000);
+            // 2. Comprobar si Google Play Billing está conectado (modo TWA)
+            if (!('getDigitalGoodsService' in window)) {
+                alert("Error: El servicio de pagos de Google Play no está disponible. Asegúrate de abrir la aplicación instalada.");
+                return;
+            }
+
+            try {
+                // 3. Conectar con el servicio oficial de Google
+                const service = await window.getDigitalGoodsService('https://play.google.com/billing');
+                
+                // 4. Preparar el producto (el SKU debe coincidir con el de Google Play Console)
+                const metodosPago = [{
+                    supportedMethods: "https://play.google.com/billing",
+                    data: { sku: "estanteria_pro" } 
+                }];
+                
+                const detallesPago = {
+                    total: {
+                        label: "Estantería Gamer PRO", 
+                        amount: { currency: "EUR", value: "2.99" }
+                    }
+                };
+
+                // 5. Crear la petición de cobro
+                const request = new PaymentRequest(metodosPago, detallesPago);
+                
+                // 6. Abrir la pasarela azul de Google Play
+                const response = await request.show();
+                
+                // 7. Si el pago es exitoso, entregar el producto y consumir el token
+                await service.acknowledge(response.details.purchaseToken, 'onetime');
+                await response.complete('success');
+                
+                // 8. ¡Éxito! Guardar estado y recargar la página
+                localStorage.setItem('gamerShelf_pro', 'true');
+                esPro = true;
+                alert("¡Gracias por tu compra! Ya tienes acceso a todo el Pack Pro.");
+                location.reload();
+
+            } catch (error) {
+                console.log("Pago cancelado o fallido: ", error);
             }
         }
+        // ----------------------------------------------
 
         function aplicarSkin(id, color, img) {
             document.documentElement.style.setProperty('--main-color', color);
