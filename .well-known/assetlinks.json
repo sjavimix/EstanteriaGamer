@@ -1,5 +1,8 @@
 [{
-  "relation": ["delegate_permission/common.handle_all_urls"],
+  "relation": [
+    "delegate_permission/common.handle_all_urls",
+    "delegate_permission/common.get_usage_stats"
+  ],
   "target": {
     "namespace": "android_app",
     "package_name": "app.netlify.collectiongamers.twa",
