@@ -369,26 +369,26 @@
             }
         }
 
-        // --- FUNCIÓN DE PAGO CON AUTO-DESBLOQUEO ---
+        // --- FUNCIÓN DE PAGO FLUIDA ---
         async function ofrecerPackPro() {
-            let quiereComprar = confirm("👑 DESBLOQUEA ESTANTERÍA GAMER PRO\n\nPor solo 2,99€ apoya el desarrollo de la app y desbloquea todos los avatares y colores para siempre.\n\n¿Quieres desbloquear el Pack Pro?");
+            let quiereComprar = confirm("👑 DESBLOQUEA ESTANTERÍA GAMER PRO\n\n¿Quieres desbloquear el Pack Pro para siempre?");
             
             if (!quiereComprar) return;
 
             if (!('getDigitalGoodsService' in window)) {
-                alert("Error: El servicio de pagos no está disponible.");
+                alert("Error: Servicio de pagos no disponible.");
                 return;
             }
 
             try {
                 const service = await window.getDigitalGoodsService('https://play.google.com/billing');
                 
-                // Comprobar compras pasadas por si ya se pagó pero no se activó
+                // Comprobamos si ya lo tiene comprado de antes
                 const comprasPasadas = await service.listPurchases();
                 const yaComprado = comprasPasadas.some(p => p.itemId === 'estanteria_pro');
 
                 if (yaComprado) {
-                    desbloquearTodoLocalmente();
+                    desbloquearTodoLocalmente(false); // No hace falta alert si ya lo tenía
                     return;
                 }
 
@@ -397,7 +397,7 @@
                     data: { sku: "estanteria_pro" } 
                 }];
                 const detallesPago = {
-                    total: { label: "PRO", amount: { currency: "EUR", value: "2.99" } }
+                    total: { label: "Pack Pro", amount: { currency: "EUR", value: "2.99" } }
                 };
 
                 const request = new PaymentRequest(metodosPago, detallesPago);
@@ -406,25 +406,28 @@
                 await service.acknowledge(response.details.purchaseToken, 'onetime');
                 await response.complete('success');
                 
-                desbloquearTodoLocalmente();
+                desbloquearTodoLocalmente(true); // Con alert de éxito
 
             } catch (error) {
-                // Capturar el error de Google si el artículo ya es del usuario
                 if (error.toString().includes("already owned") || error.toString().includes("ya has comprado")) {
-                    desbloquearTodoLocalmente();
+                    desbloquearTodoLocalmente(false);
                 } else {
                     console.log("Error en pago:", error);
                 }
             }
         }
 
-        function desbloquearTodoLocalmente() {
+        function desbloquearTodoLocalmente(conAlert = true) {
             localStorage.setItem('gamerShelf_pro', 'true');
             esPro = true;
+            // Actualización visual inmediata sin refrescar
             actualizarLabelsSkins();
             render();
-            alert("¡Pack Pro activado correctamente!");
-            location.reload();
+            if (conAlert) {
+                alert("¡Gracias por tu compra! Pack Pro activado.");
+            }
+            // En lugar de location.reload(), solo nos aseguramos de que el selector se vea bien
+            document.getElementById('skin-selector').style.display = 'grid'; 
         }
         // ----------------------------------------------
 
