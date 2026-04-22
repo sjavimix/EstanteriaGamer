@@ -297,6 +297,7 @@
                         <img src="imagenes/escudo.png" class="deco-img img-escudo" alt="Escudo" style="width: 25px;">
                     </div>
                 </div>
+                <button class="btn-logout" onclick="comprobarCompraPrevia(true)" style="color: #f1c40f; border-color: #f1c40f; margin-bottom: 5px;">Restaurar Pack Pro</button>
                 <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
             </div>
         </header>
@@ -331,7 +332,7 @@
         let currentUser = null;
         let bienvenidaActiva = false;
 
-        // GESTIÓN DE ESTADO PRO
+        // GESTIÓN DE ESTADO PRO Y MEMORIA DE SKIN
         let esPro = localStorage.getItem('gamerShelf_pro') === 'true';
 
         function toggleSkins() {
@@ -342,23 +343,31 @@
 
         function actualizarLabelsSkins() {
             const skinsPremium = ['mario', 'cloud', 'policia', 'elfo', 'cazador'];
+            
+            // Leemos qué skin está usando ahora mismo (si no hay ninguna, es la original)
+            const skinActiva = localStorage.getItem('gamerShelf_skin_id') || 'original';
 
             skinsPremium.forEach(id => {
                 const label = document.getElementById(`label-${id}`);
+                
+                // Limpiamos el emoji de la tele de forma segura primero
+                if (label && label.innerHTML.includes('📺') && esPro) {
+                    label.innerHTML = label.innerHTML.replace('📺', '').trim();
+                }
+
+                // Ahora sí buscamos el icono de check de forma segura
                 const check = document.getElementById(`check-${id}`);
                 const lock = document.getElementById(`lock-${id}`);
                 const img = document.getElementById(`img-${id}`);
 
                 if (label) {
                     if (esPro) {
-                        label.style.color = "var(--main-color)";
-                        if(check) check.style.display = "inline";
+                        // Color verde si está activa, gris si está inactiva
+                        label.style.color = (id === skinActiva) ? "var(--main-color)" : "#ccc";
+                        // Marcamos ✅ solo si es la activa
+                        if(check) check.style.display = (id === skinActiva) ? "inline" : "none";
                         if(lock) lock.style.display = "none";
                         if(img) img.style.filter = "none";
-                        // Limpiamos el emoji de la tele si lo hay
-                        if (label.innerHTML.includes('📺')) {
-                            label.innerHTML = label.innerHTML.replace('📺', '').trim();
-                        }
                     } else {
                         label.style.color = "#888";
                         if(check) check.style.display = "none";
@@ -370,28 +379,39 @@
             
             // La skin original siempre disponible
             const labelOriginal = document.getElementById('label-original');
+            const checkOriginal = document.getElementById('check-original');
             const lockOriginal = document.getElementById('lock-original');
             const imgOriginal = document.getElementById('img-original');
-            if(labelOriginal) labelOriginal.style.color = "var(--main-color)";
+            
+            if(labelOriginal) labelOriginal.style.color = (skinActiva === 'original') ? "var(--main-color)" : "#ccc";
+            if(checkOriginal) checkOriginal.style.display = (skinActiva === 'original') ? "inline" : "none";
             if(lockOriginal) lockOriginal.style.display = "none";
             if(imgOriginal) imgOriginal.style.filter = "none";
         }
-		
-		// --- SISTEMA DE PAGO GOOGLE PLAY BILLING (CIERRE RÁPIDO) ---
+
+        function intentarAplicarSkin(id, color, img) {
+            if (id === 'original' || esPro) {
+                aplicarSkin(id, color, img);
+                toggleSkins();
+            } else {
+                ofrecerPackPro();
+            }
+        }
+
+        // --- SISTEMA DE PAGO GOOGLE PLAY BILLING ---
         async function ofrecerPackPro() {
             let quiereComprar = confirm("👑 DESBLOQUEA ESTANTERÍA GAMER PRO\n\nPor solo 2,99€ apoya el desarrollo de la app y desbloquea todos los avatares y colores para siempre.\n\n¿Quieres desbloquear el Pack Pro?");
             
             if (!quiereComprar) return;
 
             if (!('getDigitalGoodsService' in window)) {
-                alert("Aviso: El sistema de pagos de Google Play no se ha detectado.");
+                alert("Aviso: El sistema de pagos de Google Play no se ha detectado. Asegúrate de estar usando la App descargada de la tienda.");
                 return;
             }
 
             try {
                 const service = await window.getDigitalGoodsService('https://play.google.com/billing');
                 
-                // 1. Comprobamos ANTES de abrir el pago
                 const comprasPasadas = await service.listPurchases();
                 if (comprasPasadas.some(p => p.itemId === 'estanteria_pro')) {
                     desbloquearTodoLocalmente();
@@ -405,33 +425,26 @@
                 const detallesPago = {
                     total: { label: "Estantería Gamer PRO", amount: { currency: "EUR", value: "2.99" } }
                 };
-
                 const request = new PaymentRequest(metodosPago, detallesPago);
-                
-                // 2. Abrimos la ventana de pago
-                const response = await request.show();
 
-                // 3. ¡MUY IMPORTANTE! Cerramos la ventana de Google Play AL INSTANTE para matar el circulito
-                await response.complete('success');
-
-                // 4. Confirmamos el recibo (Acknowledge) de forma segura sin bloquear la pantalla
                 try {
+                    const response = await request.show();
+                    // Cerramos la ventana de pago inmediatamente para quitar el circulito
+                    await response.complete('success');
                     await service.acknowledge(response.details.purchaseToken, 'onetime');
-                    console.log("Acknowledge enviado correctamente tras el pago.");
-                } catch (ackError) {
-                    console.log("El Acknowledge falló o ya estaba procesado:", ackError);
+                } catch (pagoError) {
+                    console.log("Aviso de la pasarela: ", pagoError);
                 }
 
-                // 5. Desbloqueamos la app al usuario
-                desbloquearTodoLocalmente();
-
-            } catch (error) {
-                // Si el error es de "Ya lo tienes", lo cazamos y desbloqueamos
-                if (error.toString().includes("already owned") || error.toString().includes("ya has comprado")) {
+                comprasPasadas = await service.listPurchases();
+                if (comprasPasadas.some(p => p.itemId === 'estanteria_pro')) {
                     desbloquearTodoLocalmente();
                 } else {
-                    console.log("Pago cancelado o fallido: ", error);
+                    alert("El pago no se ha podido completar o ha sido cancelado.");
                 }
+
+            } catch (error) {
+                alert("Error interno con Google Play: " + error.message);
             }
         }
 
@@ -444,59 +457,59 @@
             location.reload();
         }
 
-        // --- SISTEMA DE AUTO-CONFIRMACIÓN Y RESTAURACIÓN ---
-		async function comprobarCompraPrevia(manual = false) {
-			if (!('getDigitalGoodsService' in window)) {
-				if(manual) alert("El servicio de Google Play no está disponible.");
-				return;
-			}
+        // --- RESTAURACIÓN DE COMPRAS MEJORADA ---
+        async function comprobarCompraPrevia(manual = false) {
+            if (!('getDigitalGoodsService' in window)) {
+                if(manual) alert("El servicio de Google Play no está disponible en este momento.");
+                return;
+            }
 
-			try {
-				const service = await window.getDigitalGoodsService('https://play.google.com/billing');
-				const compras = await service.listPurchases();
-				
-				let encontrada = false;
+            try {
+                const service = await window.getDigitalGoodsService('https://play.google.com/billing');
+                const compras = await service.listPurchases();
+                
+                let encontrada = false;
 
-				for (const compra of compras) {
-					if (compra.itemId === 'estanteria_pro') {
-						encontrada = true;
-						
-						// --- PASO CRUCIAL: Confirmamos a Google que el producto ha sido entregado ---
-						// Esto evita que Google devuelva el dinero y cancele la compra
-						try {
-							await service.acknowledge(compra.purchaseToken, 'onetime');
-							console.log("Compra confirmada (Acknowledge) correctamente.");
-						} catch (err) {
-							console.log("Ya estaba confirmada o error leve:", err);
-						}
+                for (const compra of compras) {
+                    if (compra.itemId === 'estanteria_pro') {
+                        encontrada = true;
+                        
+                        try {
+                            await service.acknowledge(compra.purchaseToken, 'onetime');
+                        } catch (err) {
+                            console.log("Acknowledge previo:", err);
+                        }
 
-						// Guardamos en el móvil para que la app sea rápida
-						localStorage.setItem('gamerShelf_pro', 'true');
-						esPro = true;
-						actualizarLabelsSkins();
-						render(document.getElementById('buscador').value);
-					}
-				}
+                        localStorage.setItem('gamerShelf_pro', 'true');
+                        esPro = true;
+                        actualizarLabelsSkins();
+                        render(document.getElementById('buscador').value);
+                    }
+                }
 
-				if (encontrada) {
-					if(manual) alert("¡Pack Pro restaurado y confirmado con éxito!");
-				} else {
-					if(manual) alert("No se han encontrado compras en esta cuenta.");
-				}
+                if (encontrada) {
+                    if(manual) alert("¡Pack Pro restaurado y confirmado con éxito!");
+                } else {
+                    if(manual) alert("No se han encontrado compras en esta cuenta.");
+                }
 
-			} catch (e) { 
-				console.log("Error en sincronización:", e); 
-				if(manual) alert("Error al conectar con Google Play.");
-			}
-		}
+            } catch (e) { 
+                console.log("Error en sincronización:", e); 
+                if(manual) alert("Error al conectar con Google Play.");
+            }
+        }
 
         function aplicarSkin(id, color, img) {
             document.documentElement.style.setProperty('--main-color', color);
             const avatar = document.getElementById('avatar-principal');
             if(avatar) avatar.src = `imagenes/${img}`;
             document.getElementById('meta-theme').content = color;
+            
+            // Guardamos todo el estado de la skin en memoria, ¡incluido su ID!
             localStorage.setItem('gamerShelf_skin_color', color);
             localStorage.setItem('gamerShelf_skin_img', img);
+            localStorage.setItem('gamerShelf_skin_id', id);
+            
             render(document.getElementById('buscador').value);
             actualizarLabelsSkins(); 
         }
@@ -504,6 +517,7 @@
         function restaurarSkin() {
             const savedColor = localStorage.getItem('gamerShelf_skin_color');
             const savedImg = localStorage.getItem('gamerShelf_skin_img');
+            
             if(savedColor && savedImg) {
                 document.documentElement.style.setProperty('--main-color', savedColor);
                 document.getElementById('meta-theme').content = savedColor;
@@ -580,7 +594,7 @@
 
         function agregarJuego() {
             const t = document.getElementById('add-titulo').value.trim().toUpperCase();
-            const g = document.getElementById('add-genero').value; // Ahora captura el select
+            const g = document.getElementById('add-genero').value; 
             const c = document.getElementById('add-consola').value;
             if(!t || !currentUser) return;
             if (db_local.some(j => j.titulo.toUpperCase() === t && j.consola === c)) {
@@ -590,7 +604,6 @@
             db.collection("juegos").add({ titulo: t, genero: g, consola: c, foto: fotoSeleccionada, userId: currentUser.uid, fecha: new Date() }).then(() => {
                 mostrarFeedback(`✅ AÑADIDO: ${t}`, getComputedStyle(document.documentElement).getPropertyValue('--main-color'));
                 document.getElementById('add-titulo').value = "";
-                // Dejamos que el select mantenga el último género por comodidad
                 fotoSeleccionada = "";
                 document.getElementById('suggestions').style.display = "none";
             });
