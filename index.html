@@ -397,8 +397,8 @@
                 ofrecerPackPro();
             }
         }
-
-        // --- SISTEMA DE PAGO GOOGLE PLAY BILLING ---
+		
+		// --- SISTEMA DE PAGO GOOGLE PLAY BILLING ---
         async function ofrecerPackPro() {
             let quiereComprar = confirm("👑 DESBLOQUEA ESTANTERÍA GAMER PRO\n\nPor solo 2,99€ apoya el desarrollo de la app y desbloquea todos los avatares y colores para siempre.\n\n¿Quieres desbloquear el Pack Pro?");
             
@@ -412,7 +412,9 @@
             try {
                 const service = await window.getDigitalGoodsService('https://play.google.com/billing');
                 
-                const comprasPasadas = await service.listPurchases();
+                // ¡AQUÍ ESTABA EL ERROR! Ahora usamos 'let' en vez de 'const'
+                let comprasPasadas = await service.listPurchases();
+                
                 if (comprasPasadas.some(p => p.itemId === 'estanteria_pro')) {
                     desbloquearTodoLocalmente();
                     return;
@@ -436,6 +438,7 @@
                     console.log("Aviso de la pasarela: ", pagoError);
                 }
 
+                // Ahora sí nos deja actualizar esta variable sin dar error
                 comprasPasadas = await service.listPurchases();
                 if (comprasPasadas.some(p => p.itemId === 'estanteria_pro')) {
                     desbloquearTodoLocalmente();
