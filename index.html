@@ -376,39 +376,28 @@
             if(lockOriginal) lockOriginal.style.display = "none";
             if(imgOriginal) imgOriginal.style.filter = "none";
         }
-
-        function intentarAplicarSkin(id, color, img) {
-            if (id === 'original' || esPro) {
-                aplicarSkin(id, color, img);
-                toggleSkins();
-            } else {
-                ofrecerPackPro();
-            }
-        }
-
-        // --- SISTEMA DE PAGO GOOGLE PLAY BILLING (VERSIÓN BLINDADA) ---
+		
+		// --- SISTEMA DE PAGO GOOGLE PLAY BILLING (CIERRE RÁPIDO) ---
         async function ofrecerPackPro() {
             let quiereComprar = confirm("👑 DESBLOQUEA ESTANTERÍA GAMER PRO\n\nPor solo 2,99€ apoya el desarrollo de la app y desbloquea todos los avatares y colores para siempre.\n\n¿Quieres desbloquear el Pack Pro?");
             
             if (!quiereComprar) return;
 
             if (!('getDigitalGoodsService' in window)) {
-                alert("Aviso: El sistema de pagos de Google Play no se ha detectado. Asegúrate de estar usando la App descargada de la tienda.");
+                alert("Aviso: El sistema de pagos de Google Play no se ha detectado.");
                 return;
             }
 
             try {
-                // 1. Conectamos con Google Play
                 const service = await window.getDigitalGoodsService('https://play.google.com/billing');
                 
-                // 2. Comprobamos ANTES de abrir el pago
-                let comprasPasadas = await service.listPurchases();
+                // 1. Comprobamos ANTES de abrir el pago
+                const comprasPasadas = await service.listPurchases();
                 if (comprasPasadas.some(p => p.itemId === 'estanteria_pro')) {
                     desbloquearTodoLocalmente();
                     return;
                 }
 
-                // 3. Preparamos la ventana de pago
                 const metodosPago = [{
                     supportedMethods: "https://play.google.com/billing",
                     data: { sku: "estanteria_pro" } 
@@ -416,27 +405,33 @@
                 const detallesPago = {
                     total: { label: "Estantería Gamer PRO", amount: { currency: "EUR", value: "2.99" } }
                 };
+
                 const request = new PaymentRequest(metodosPago, detallesPago);
+                
+                // 2. Abrimos la ventana de pago
+                const response = await request.show();
 
-                // 4. Mostramos la ventana y capturamos CUALQUIER resultado sin bloquear
+                // 3. ¡MUY IMPORTANTE! Cerramos la ventana de Google Play AL INSTANTE para matar el circulito
+                await response.complete('success');
+
+                // 4. Confirmamos el recibo (Acknowledge) de forma segura sin bloquear la pantalla
                 try {
-                    const response = await request.show();
                     await service.acknowledge(response.details.purchaseToken, 'onetime');
-                    await response.complete('success');
-                } catch (pagoError) {
-                    console.log("Aviso de la pasarela: ", pagoError);
+                    console.log("Acknowledge enviado correctamente tras el pago.");
+                } catch (ackError) {
+                    console.log("El Acknowledge falló o ya estaba procesado:", ackError);
                 }
 
-                // 5. COMPROBACIÓN DEFINITIVA: ¿Lo tiene ahora en su cuenta?
-                comprasPasadas = await service.listPurchases();
-                if (comprasPasadas.some(p => p.itemId === 'estanteria_pro')) {
-                    desbloquearTodoLocalmente();
-                } else {
-                    alert("El pago no se ha podido completar o ha sido cancelado.");
-                }
+                // 5. Desbloqueamos la app al usuario
+                desbloquearTodoLocalmente();
 
             } catch (error) {
-                alert("Error interno con Google Play: " + error.message);
+                // Si el error es de "Ya lo tienes", lo cazamos y desbloqueamos
+                if (error.toString().includes("already owned") || error.toString().includes("ya has comprado")) {
+                    desbloquearTodoLocalmente();
+                } else {
+                    console.log("Pago cancelado o fallido: ", error);
+                }
             }
         }
 
