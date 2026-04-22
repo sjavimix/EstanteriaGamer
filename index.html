@@ -398,23 +398,23 @@
             }
         }
 		
-		// --- SISTEMA DE PAGO GOOGLE PLAY BILLING (CORREGIDO) ---
+		// --- SISTEMA DE PAGO GOOGLE PLAY BILLING (OFICIAL Y CON CHIVATOS) ---
         async function ofrecerPackPro() {
             let quiereComprar = confirm("👑 DESBLOQUEA ESTANTERÍA GAMER PRO\n\nPor solo 2,99€ apoya el desarrollo de la app y desbloquea todos los avatares y colores para siempre.\n\n¿Quieres desbloquear el Pack Pro?");
             
             if (!quiereComprar) return;
 
             if (!('getDigitalGoodsService' in window)) {
-                alert("Aviso: El sistema de pagos de Google Play no se ha detectado. Asegúrate de estar usando la App descargada de la tienda.");
+                alert("Aviso: El sistema de pagos de Google Play no se ha detectado. Asegúrate de estar usando la App instalada desde la tienda.");
                 return;
             }
 
             try {
                 const service = await window.getDigitalGoodsService('https://play.google.com/billing');
                 
-                let comprasPasadas = await service.listPurchases();
+                const comprasPasadas = await service.listPurchases();
                 if (comprasPasadas.some(p => p.itemId === 'estanteria_pro')) {
-                    desbloquearTodoLocalmente();
+                    desbloquearTodoLocalmente(true);
                     return;
                 }
 
@@ -428,31 +428,34 @@
                 const request = new PaymentRequest(metodosPago, detallesPago);
 
                 try {
+                    // 1. Abrimos pasarela de pago
                     const response = await request.show();
-                    
-                    // ¡AQUÍ ESTABA EL FALLO! El recibo en este momento se llama 'token' a secas
                     const tokenCompra = response.details.token;
 
-                    // Cerramos el circulito de carga
+                    // 2. Cerramos la ventana de carga azul RÁPIDO
                     await response.complete('success');
                     
-                    // Enviamos la confirmación EXACTA a Google
-                    await service.acknowledge(tokenCompra, 'onetime');
-                    console.log("Confirmación enviada con éxito a Google Play.");
+                    // 3. LA CONFIRMACIÓN VITAL (Acknowledge)
+                    try {
+                        await service.acknowledge(tokenCompra, 'onetime');
+                        
+                        // Si llega aquí, Google lo ha aceptado y NO cancelará a los 5 minutos
+                        if (currentUser) {
+                            await db.collection("usuarios").doc(currentUser.uid).set({ esPro: true }, { merge: true });
+                        }
+                        desbloquearTodoLocalmente(true);
+                        
+                    } catch (ackError) {
+                        // SI FALLA LA CONFIRMACIÓN, NOS LO DIRÁ AQUÍ EN PANTALLA
+                        alert("⚠️ Error al confirmar con Google: " + ackError.message);
+                    }
 
                 } catch (pagoError) {
-                    console.log("Aviso de la pasarela: ", pagoError);
-                }
-
-                comprasPasadas = await service.listPurchases();
-                if (comprasPasadas.some(p => p.itemId === 'estanteria_pro')) {
-                    desbloquearTodoLocalmente();
-                } else {
-                    alert("El pago no se ha podido completar o ha sido cancelado.");
+                    console.log("El usuario canceló la ventana o dio error: ", pagoError);
                 }
 
             } catch (error) {
-                alert("Error interno con Google Play: " + error.message);
+                alert("Error interno conectando a Play Store: " + error.message);
             }
         }
 
