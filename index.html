@@ -449,20 +449,51 @@
             location.reload();
         }
 
-        // --- RESTAURACIÓN SILENCIOSA DE COMPRAS ---
-        async function comprobarCompraPrevia() {
-            if (!esPro && ('getDigitalGoodsService' in window)) {
-                try {
-                    const service = await window.getDigitalGoodsService('https://play.google.com/billing');
-                    const compras = await service.listPurchases();
-                    if (compras.some(p => p.itemId === 'estanteria_pro')) {
-                        localStorage.setItem('gamerShelf_pro', 'true');
-                        esPro = true;
-                        actualizarLabelsSkins();
-                    }
-                } catch (e) { console.log("Verificación silenciosa omitida", e); }
-            }
-        }
+        // --- SISTEMA DE AUTO-CONFIRMACIÓN Y RESTAURACIÓN ---
+		async function comprobarCompraPrevia(manual = false) {
+			if (!('getDigitalGoodsService' in window)) {
+				if(manual) alert("El servicio de Google Play no está disponible.");
+				return;
+			}
+
+			try {
+				const service = await window.getDigitalGoodsService('https://play.google.com/billing');
+				const compras = await service.listPurchases();
+				
+				let encontrada = false;
+
+				for (const compra of compras) {
+					if (compra.itemId === 'estanteria_pro') {
+						encontrada = true;
+						
+						// --- PASO CRUCIAL: Confirmamos a Google que el producto ha sido entregado ---
+						// Esto evita que Google devuelva el dinero y cancele la compra
+						try {
+							await service.acknowledge(compra.purchaseToken, 'onetime');
+							console.log("Compra confirmada (Acknowledge) correctamente.");
+						} catch (err) {
+							console.log("Ya estaba confirmada o error leve:", err);
+						}
+
+						// Guardamos en el móvil para que la app sea rápida
+						localStorage.setItem('gamerShelf_pro', 'true');
+						esPro = true;
+						actualizarLabelsSkins();
+						render(document.getElementById('buscador').value);
+					}
+				}
+
+				if (encontrada) {
+					if(manual) alert("¡Pack Pro restaurado y confirmado con éxito!");
+				} else {
+					if(manual) alert("No se han encontrado compras en esta cuenta.");
+				}
+
+			} catch (e) { 
+				console.log("Error en sincronización:", e); 
+				if(manual) alert("Error al conectar con Google Play.");
+			}
+		}
 
         function aplicarSkin(id, color, img) {
             document.documentElement.style.setProperty('--main-color', color);
