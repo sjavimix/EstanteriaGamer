@@ -437,7 +437,7 @@
                     
                     // 3. LA CONFIRMACIÓN VITAL (Acknowledge)
                     try {
-                        await service.acknowledge(tokenCompra, 'onetime');
+                        await service.consume(tokenCompra);
                         
                         // Si llega aquí, Google lo ha aceptado y NO cancelará a los 5 minutos
                         if (currentUser) {
@@ -486,7 +486,7 @@
                         encontrada = true;
                         
                         try {
-                            await service.acknowledge(compra.purchaseToken, 'onetime');
+                            await service.consume(compra.purchaseToken);
                         } catch (err) {
                             console.log("Acknowledge previo:", err);
                         }
